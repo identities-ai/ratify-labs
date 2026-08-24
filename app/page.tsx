@@ -57,6 +57,7 @@ export default function Home() {
           {reference.href ? <Link href={reference.href}>{reference.action} <span>→</span></Link> : <span className="unavailable">In development</span>}
         </article>)}
       </div>
+      <p className="catalog-note">Ratify Labs publishes open reference implementations, not the Ratify Verify product. A listed platform is implementation context, not an endorsement or partnership claim.</p>
     </section>
 
     <section className="principles" id="principles">

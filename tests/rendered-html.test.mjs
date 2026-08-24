@@ -38,7 +38,8 @@ test("routes only read-only Maritime paths with a server credential", async () =
     return new Response("origin", { status: 200, headers: { "Set-Cookie": "private=1" } });
   };
   try {
-    const env = { ASSETS: assets, MARITIME_ORIGIN: "https://origin.example", LABS_ROUTER_TOKEN: "server-secret" };
+    const routeToken = "a".repeat(64);
+    const env = { ASSETS: assets, MARITIME_ORIGIN: "https://origin.example", LABS_ROUTER_TOKEN: routeToken };
     const request = new Request("https://labs.ratifyprotocol.com/maritime/_next/app.js", {
       headers: { Authorization: "Bearer browser", Cookie: "session=browser", "X-Ratify-Labs-Route": "Bearer attacker" },
     });
@@ -46,7 +47,7 @@ test("routes only read-only Maritime paths with a server credential", async () =
     assert.equal(response.status, 200);
     assert.equal(calls.length, 1);
     assert.equal(new URL(calls[0].url).href, "https://origin.example/maritime/_next/app.js");
-    assert.equal(calls[0].headers.get("x-ratify-labs-route"), "Bearer server-secret");
+    assert.equal(calls[0].headers.get("x-ratify-labs-route"), `Bearer ${routeToken}`);
     assert.equal(calls[0].headers.get("authorization"), null);
     assert.equal(calls[0].headers.get("cookie"), null);
     assert.equal(response.headers.get("set-cookie"), null);
