@@ -51,6 +51,8 @@ test("routes only read-only Maritime paths with a server credential", async () =
     assert.equal(calls[0].headers.get("authorization"), null);
     assert.equal(calls[0].headers.get("cookie"), null);
     assert.equal(response.headers.get("set-cookie"), null);
+    assert.equal(response.headers.get("x-frame-options"), "SAMEORIGIN");
+    assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'self'/);
 
     const post = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime", { method: "POST" }), env, ctx);
     assert.equal(post.status, 405);
@@ -62,6 +64,18 @@ test("routes only read-only Maritime paths with a server credential", async () =
     const asset = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/_next/static/app.js"), env, ctx);
     assert.equal(asset.status, 200);
     assert.equal(calls.length, 2);
+
+    const bareStaticDirectory = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/_next/static/"), env, ctx);
+    assert.equal(bareStaticDirectory.status, 404);
+    const unusedImageOptimizer = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/_vinext/image?url=%2Fmaritime%2Fratify-logo.png&w=64&q=75"), env, ctx);
+    assert.equal(unusedImageOptimizer.status, 404);
+    assert.equal(calls.length, 2);
+
+    globalThis.fetch = async () => new Response("internal origin detail", { status: 500, headers: { Location: "https://origin.example/private" } });
+    const failed = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime"), env, ctx);
+    assert.equal(failed.status, 502);
+    assert.equal(await failed.text(), "Reference unavailable");
+    assert.equal(failed.headers.get("location"), null);
   } finally {
     globalThis.fetch = originalFetch;
   }

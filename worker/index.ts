@@ -25,17 +25,26 @@ function isMaritimePublicPath(pathname: string): boolean {
   return pathname === "/maritime" ||
     pathname === "/maritime/" ||
     pathname === "/maritime/ratify-logo.png" ||
+    pathname === "/maritime/og.png" ||
     pathname === "/maritime/favicon.svg" ||
-    pathname === "/maritime/_vinext/image" ||
-    pathname.startsWith("/maritime/_next/static/");
+    (pathname.startsWith("/maritime/_next/static/") && pathname.length > "/maritime/_next/static/".length);
+}
+
+function securityHeaders(headers = new Headers()): Headers {
+  headers.set("Content-Security-Policy", "frame-ancestors 'self'");
+  headers.set("X-Frame-Options", "SAMEORIGIN");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  return headers;
 }
 
 async function routeMaritime(request: Request, env: Env): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
-    return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
+    return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: "GET, HEAD", "Cache-Control": "no-store" })) });
   }
   if (!env.MARITIME_ORIGIN || !env.LABS_ROUTER_TOKEN || env.LABS_ROUTER_TOKEN.length < 32) {
-    return new Response("Reference unavailable", { status: 503, headers: { "Cache-Control": "no-store" } });
+    return new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
   }
   const source = new URL(request.url);
   const target = new URL(source.pathname + source.search, env.MARITIME_ORIGIN);
@@ -53,20 +62,26 @@ async function routeMaritime(request: Request, env: Env): Promise<Response> {
       signal: AbortSignal.timeout(10_000),
     });
     const upstream = await fetch(upstreamRequest);
-    const responseHeaders = new Headers(upstream.headers);
+    if (!((upstream.status >= 200 && upstream.status < 300) || upstream.status === 304)) {
+      return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    }
+    const responseHeaders = securityHeaders(new Headers(upstream.headers));
     responseHeaders.delete("Set-Cookie");
     responseHeaders.set("X-Ratify-Labs-Reference", "maritime");
     return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
   } catch {
-    return new Response("Reference unavailable", { status: 502, headers: { "Cache-Control": "no-store" } });
+    return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
   }
 }
 
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    if (!isAllowedHost(url.hostname)) return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+    if (!isAllowedHost(url.hostname)) return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     if (isMaritimePublicPath(url.pathname)) return routeMaritime(request, env);
+    if (url.pathname === "/maritime" || url.pathname.startsWith("/maritime/")) {
+      return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    }
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {
@@ -74,7 +89,8 @@ const worker = {
         transformImage: async (body, { width, format, quality }) => (await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality })).response(),
       }, allowedWidths);
     }
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    return new Response(response.body, { status: response.status, headers: securityHeaders(new Headers(response.headers)) });
   },
 };
 
