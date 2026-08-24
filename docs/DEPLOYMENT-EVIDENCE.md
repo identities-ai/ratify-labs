@@ -5,8 +5,8 @@ Date: 2026-08-24
 ## Catalog
 
 - Public repository: `https://github.com/identities-ai/ratify-labs`
-- Deployed catalog revision: `408f78a0d85d1ec683f5f3364135e0ea365c712b`
-- Hosting version: 4
+- Deployed catalog revision: `0a52c084c54e045543fbadd16d388b4418076364`
+- Hosting version: 5
 - Public root: `https://labs.ratifyprotocol.com/`
 - Custom-domain, provider, and TLS states: active
 - Catalog provider hostname: HTTP 404
