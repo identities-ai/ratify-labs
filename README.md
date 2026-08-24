@@ -20,3 +20,6 @@ configuration; they never enter source control.
 
 Read [`docs/PRODUCT-REQUIREMENTS.md`](docs/PRODUCT-REQUIREMENTS.md) before
 adding a catalog entry or route.
+
+See [`docs/PRIVACY.md`](docs/PRIVACY.md) for the application boundary and the
+hosting layer's necessary abuse-prevention cookie.

@@ -21,6 +21,15 @@ function isAllowedHost(hostname: string): boolean {
   return hostname === LABS_HOST || hostname === "localhost" || hostname === "127.0.0.1";
 }
 
+function isMaritimePublicPath(pathname: string): boolean {
+  return pathname === "/maritime" ||
+    pathname === "/maritime/" ||
+    pathname === "/maritime/ratify-logo.png" ||
+    pathname === "/maritime/favicon.svg" ||
+    pathname === "/maritime/_vinext/image" ||
+    pathname.startsWith("/maritime/_next/static/");
+}
+
 async function routeMaritime(request: Request, env: Env): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD", "Cache-Control": "no-store" } });
@@ -57,7 +66,7 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (!isAllowedHost(url.hostname)) return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
-    if (url.pathname === "/maritime" || url.pathname.startsWith("/maritime/")) return routeMaritime(request, env);
+    if (isMaritimePublicPath(url.pathname)) return routeMaritime(request, env);
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {
