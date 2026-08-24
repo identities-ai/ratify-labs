@@ -2,6 +2,8 @@
 
 Shared public catalog and routing boundary for executable Ratify references.
 
+Licensed under Apache-2.0.
+
 Ratify Labs makes authority-aware agent systems tangible: each live entry is a
 public implementation with a working path, explicit bounds, inspectable source,
 and independently recorded evidence. The catalog is not Ratify Verify and does
