@@ -40,13 +40,13 @@ test("routes only read-only Maritime paths with a server credential", async () =
   try {
     const routeToken = "a".repeat(64);
     const env = { ASSETS: assets, MARITIME_ORIGIN: "https://origin.example", LABS_ROUTER_TOKEN: routeToken };
-    const request = new Request("https://labs.ratifyprotocol.com/maritime/_next/app.js", {
+    const request = new Request("https://labs.ratifyprotocol.com/maritime/_next/static/app.js", {
       headers: { Authorization: "Bearer browser", Cookie: "session=browser", "X-Ratify-Labs-Route": "Bearer attacker" },
     });
     const response = await worker.fetch(request, env, ctx);
     assert.equal(response.status, 200);
     assert.equal(calls.length, 1);
-    assert.equal(new URL(calls[0].url).href, "https://origin.example/maritime/_next/app.js");
+    assert.equal(new URL(calls[0].url).href, "https://origin.example/maritime/_next/static/app.js");
     assert.equal(calls[0].headers.get("x-ratify-labs-route"), `Bearer ${routeToken}`);
     assert.equal(calls[0].headers.get("authorization"), null);
     assert.equal(calls[0].headers.get("cookie"), null);
@@ -54,6 +54,14 @@ test("routes only read-only Maritime paths with a server credential", async () =
 
     const post = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime", { method: "POST" }), env, ctx);
     assert.equal(post.status, 405);
+
+    const arbitrary = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/not-registered"), env, ctx);
+    assert.equal(arbitrary.status, 404);
+    assert.equal(calls.length, 1);
+
+    const asset = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/_next/static/app.js"), env, ctx);
+    assert.equal(asset.status, 200);
+    assert.equal(calls.length, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }

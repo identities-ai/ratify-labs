@@ -69,7 +69,7 @@ export default function Home() {
       </ol>
     </section>
 
-    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><a href="https://ratifyprotocol.com">Ratify Protocol ↗</a></footer>
+    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><div className="footer-links"><a href="https://github.com/identities-ai/ratify-labs/blob/main/docs/PRIVACY.md">Privacy ↗</a><a href="https://ratifyprotocol.com">Ratify Protocol ↗</a></div></footer>
   </main>;
 }
 import Image from "next/image";
