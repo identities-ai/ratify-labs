@@ -38,3 +38,14 @@ The catalog routes only the registered Maritime read path. It strips browser
 cookies, authorization, and any caller-supplied route credential, supplies its
 own secret from hosting configuration, and returns fixed responses for origin
 failure.
+
+## Internal preflight closure
+
+- Labs revision `7ef6dcd` replaces the Maritime prefix proxy with an explicit
+  allowlist for the page, owned public assets, image endpoint, and static build
+  assets. `/maritime/not-registered` now returns a local 404 without the origin
+  marker, while required static assets return 200.
+- Maritime revision `1539b2d` serves its logo from
+  `/maritime/ratify-logo.png`, removing accidental catalog-asset coupling.
+- `docs/PRIVACY.md` records the hosting layer's necessary `__cf_bm` cookie and
+  distinguishes it from application sessions and origin-visible state.
