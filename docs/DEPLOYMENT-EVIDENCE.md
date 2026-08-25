@@ -17,14 +17,14 @@ Date: 2026-08-24
 
 - Stable route: `https://labs.ratifyprotocol.com/maritime`
 - Routed reference revision: `6b9adf5`
-- Reference hosting version: 9
+- Reference hosting version: 11
 - Reference provider document route: HTTP 404 without the server-held route credential
 - Route assets resolve beneath `/maritime/_next/`
 - Root and routed reference: HTTP 200
 - Maritime repository gate: 72 passed with warnings treated as errors
-- Agent image: `ghcr.io/identities-ai/ratify-maritime-agent@sha256:8288f4d24ada03281eec88bfab05d2e3b7552e36890a7b5a32c45c21b44f8c85`
-- Agent image source revision: `f4d4b00ef4e81e8acc5fca9124da55267c69c544`
-- Scenario proxy Cloudflare version: `b5aae58b-b593-49ad-8994-91537f642c74`
+- Agent image: `ghcr.io/identities-ai/ratify-maritime-agent@sha256:e769c3ad151d12b5b8ef3f1b9caec3bab97cb2bad3eadbc0179bf5f9c9c376c6`
+- Agent image source revision: `ce0494e37e441ce0c8fbaee557a7c3096e6ea4e7`
+- Scenario proxy Cloudflare version: `91b33a49-728d-4a9d-9e2b-be02d01c7cc0`
 - Scenario proxy tests: 31 passed; type check and dry-run bundle passed
 
 ## Live smoke
@@ -40,6 +40,13 @@ proxy:
 
 The unchanged handler count on denial followed by a one-step increase on allow
 shows that the denied request did not enter the protected handler.
+
+The console now explains the active delegation before execution and renders
+its scope, resource, category, audience, issue time, and expiry from the live
+agent response. The 2026-08-25 closure sequence denied the 50,100-minor-unit
+request at shared handler count 14 and allowed the 42,000-minor-unit request at
+count 15. Console source `e09e07bfa5c92dda7328c2021c2fcbed71cef805`
+is deployed as hosting version 11.
 
 Both document routes return the reviewed anti-framing, HSTS, content-type, and
 referrer-policy headers. Both favicons and the Maritime-specific social card
