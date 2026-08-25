@@ -16,9 +16,12 @@ test("renders the shared Labs catalog", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Ratify Labs — Executable authority patterns/);
-  assert.match(html, /Agents can act/);
+  assert.match(html, /Don.t take the authority claim on trust/);
+  assert.match(html, /Inspect the evidence/);
   assert.match(html, /Maritime × Ratify/);
-  assert.match(html, /href="\/maritime"/);
+  assert.match(html, /href="https:\/\/labs\.ratifyprotocol\.com\/maritime"/);
+  assert.match(html, /href="https:\/\/github\.com\/identities-ai\/ratify-maritime-reference"/);
+  assert.match(html, /Catalog source/);
   assert.doesNotMatch(html, /Your site is taking shape/);
 });
 
