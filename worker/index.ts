@@ -39,20 +39,6 @@ function securityHeaders(headers = new Headers()): Headers {
   return headers;
 }
 
-function isCatalogAsset(pathname: string): boolean {
-  return pathname === "/favicon.svg" ||
-    pathname === "/og.jpg" ||
-    pathname === "/ratify-logo.png" ||
-    pathname.startsWith("/_next/static/");
-}
-
-async function serveAsset(request: Request, env: Env): Promise<Response> {
-  const asset = await env.ASSETS.fetch(request);
-  const headers = securityHeaders(new Headers(asset.headers));
-  headers.delete("Set-Cookie");
-  return new Response(asset.body, { status: asset.status, headers });
-}
-
 async function routeMaritime(request: Request, env: Env): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: "GET, HEAD", "Cache-Control": "no-store" })) });
@@ -96,7 +82,6 @@ const worker = {
     if (url.pathname === "/maritime" || url.pathname.startsWith("/maritime/")) {
       return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     }
-    if (isCatalogAsset(url.pathname)) return serveAsset(request, env);
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {

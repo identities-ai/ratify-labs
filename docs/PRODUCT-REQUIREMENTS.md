@@ -34,7 +34,10 @@ working reference from a diagram or product claim.
 - LAB-007: Reference routes MUST come from a closed registry; arbitrary origins,
   paths, methods, and headers MUST NOT be forwarded.
 - LAB-008: A routed origin MUST require a secret held outside both repositories.
-  Direct provider-host access MUST fail closed.
+  Direct provider-host access to documents and execution routes MUST fail
+  closed. The hosting platform may serve byte-identical public static assets
+  from its provider hostname; those assets carry no credentials or execution
+  capability.
 - LAB-009: The router MUST strip client-supplied routing credentials, cookies,
   authorization, and forwarding metadata before origin contact.
 - LAB-010: Origin failure MUST produce a fixed, redacted response with no URL,
@@ -43,8 +46,10 @@ working reference from a diagram or product claim.
   MUST NOT imply platform endorsement or partnership.
 - LAB-012: A reference MUST NOT be marked live before its public source,
   executable gate, immutable revision, and independent closure evidence exist.
-- LAB-013: The root catalog and every routed reference MUST be served only from
-  `labs.ratifyprotocol.com`; provider hostnames return 404.
+- LAB-013: The root catalog and every routed reference document or execution
+  route MUST be served only from `labs.ratifyprotocol.com`; provider hostnames
+  return 404 for those routes. Public static assets may also be served by the
+  hosting provider as a documented platform limitation.
 - LAB-014: Deployment evidence MUST record the catalog revision, routed
   reference revision, origin-denial result, and live reference smoke result.
 
