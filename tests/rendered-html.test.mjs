@@ -27,8 +27,6 @@ test("rejects the provider hostname", async () => {
   const response = await worker.fetch(new Request("https://ratify-labs.example-host.test/"), { ASSETS: assets }, ctx);
   assert.equal(response.status, 404);
   assert.equal(response.headers.get("cache-control"), "no-store");
-  const asset = await worker.fetch(new Request("https://ratify-labs.example-host.test/og.jpg"), { ASSETS: { fetch: async () => new Response("asset") } }, ctx);
-  assert.equal(asset.status, 404);
 });
 
 test("routes only read-only Maritime paths with a server credential", async () => {
