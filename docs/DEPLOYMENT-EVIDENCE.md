@@ -17,7 +17,7 @@ Date: 2026-08-24
 
 - Stable route: `https://labs.ratifyprotocol.com/maritime`
 - Routed reference revision: `6b9adf5`
-- Reference hosting version: 12
+- Reference hosting version: 13
 - Reference provider document route: HTTP 404 without the server-held route credential
 - Route assets resolve beneath `/maritime/_next/`
 - Root and routed reference: HTTP 200
