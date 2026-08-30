@@ -6,3 +6,4 @@
 .card-links{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.card-links a:last-child{font-size:12px;color:#aebbd1}
 .node-b{max-width:calc(100% - 8px)}
 @media(max-width:440px){.source{display:inline-flex}.signal{width:calc(100% - 8px);margin-left:4px}.node-b{right:4px}.footer-links{flex-wrap:wrap;justify-content:flex-start}}
+.is-published{color:var(--blue)}
