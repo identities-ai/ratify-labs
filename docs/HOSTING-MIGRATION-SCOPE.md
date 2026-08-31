@@ -41,7 +41,8 @@ deployed somewhere else.
 | Runtime | OpenAI Sites | Cloudflare Workers |
 | Publish | Sites connector, inside a Codex session | `wrangler deploy`, from CI or any operator |
 | `labs.ratifyprotocol.com` | CNAME to `custom-domains.chatgpt.site` | Worker custom domain |
-| `MARITIME_ORIGIN`, `LABS_ROUTER_TOKEN` | Sites environment | Worker secrets |
+| `LABS_ROUTER_TOKEN` | Sites environment | Worker secret |
+| `MARITIME_ORIGIN` | Sites environment | Worker var, not a secret |
 | Hosting cookie in `PRIVACY.md` | Disclosed, set by the Sites layer | No longer set; the disclosure changes |
 | Provider-hostname asset exposure | Accepted limitation (LAB-005) | Does not arise |
 | Deployment evidence | Recorded by hand | Emitted by the deploy job |
@@ -50,35 +51,67 @@ Files: `.openai/hosting.json` and `build/sites-vite-plugin.ts` become dead and
 should be removed in the same change, not left as false signals about where the
 site runs.
 
-## The `/maritime` route, which is the delicate part
+## The `/maritime` route, and what the origin actually checks
 
 The Worker does not serve Maritime. It proxies a **closed allowlist** of paths
 to `MARITIME_ORIGIN`, attaching `X-Ratify-Labs-Route: Bearer <LABS_ROUTER_TOKEN>`
-so the origin can refuse anything that did not come through the router. Anything
-outside the allowlist returns 404, and the origin's own document route is meant
-to fail closed on direct access.
+so the origin can refuse anything that did not come through the router.
 
-**The risk is not the proxy code.** That code is unchanged by the move; it
-already runs on Workers. The risk is in three things around it:
+An earlier draft of this scope said the origin's authorization rules were
+unknowable from here and would have to be discovered by testing. That was
+wrong. The origin is
+`ratify-maritime-reference/apps/demo-console/site/worker/index.ts`, in this
+workspace, and its gate is four lines:
 
-1. **The secrets are unknown to this workspace.** `LABS_ROUTER_TOKEN` must be
-   byte-identical to what the Maritime origin expects. Deploying with a wrong or
-   absent token yields a 503 from the router, or a 502 once the origin refuses.
-   Whoever holds the Sites environment has to supply both values.
-2. **The origin may authorise on more than the token.** If the Maritime side
-   also restricts by source IP, ASN, or a Cloudflare-specific attribute of the
-   current caller, a Worker calling from a different egress could be refused
-   even with the correct token. Nothing in this repository can answer that; it
-   lives in the Maritime deployment.
-3. **Egress shape changes.** Today the caller is the Sites runtime. After the
-   move it is a Cloudflare Worker, so timeouts, retry behaviour, and TLS
-   fingerprint differ. The 10-second `AbortSignal.timeout` and the 502 on any
-   non-2xx are unchanged, but they will be exercised against a different network
-   path.
+```js
+const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+const routed = url.hostname === PROVIDER_HOST
+  && await hasValidRouteCredential(request, env.LABS_ROUTER_TOKEN);
+if (!local && !routed) return new Response("Not found", { status: 404 });
+```
 
-**This is why the cutover is staged rather than switched.** Every one of these
-is answerable before DNS moves, by deploying to a `workers.dev` hostname and
-exercising `/maritime` there.
+`PROVIDER_HOST` is `ratify-maritime-lab.chuksy0x01.chatgpt.site`, and
+`hasValidRouteCredential` is a constant-time SHA-256 comparison that also
+rejects a header containing a comma, which is how a duplicated header would
+arrive.
+
+So the origin requires exactly two things: the request's **Host header must be
+the provider hostname**, and the token must match. There is **no IP, ASN, or
+other network-identity check**. Confirmed live: that hostname returns 404 with
+no token and 404 with a wrong token, while the same path through
+`labs.ratifyprotocol.com` returns 200 with `X-Ratify-Labs-Reference: maritime`.
+
+This resolves the migration question in the reassuring direction. The Labs
+Worker builds its upstream request with `new Request(target, ...)`, so the Host
+header is whatever `MARITIME_ORIGIN` names. A Cloudflare Worker fetching that
+same URL sends the same Host and the same token, so the origin cannot tell the
+difference and `routed` stays true. Egress shape does not enter into it.
+
+**`MARITIME_ORIGIN` is therefore not a secret.** It is
+`https://ratify-maritime-lab.chuksy0x01.chatgpt.site`, fixed by the origin's own
+`PROVIDER_HOST` constant and verifiable without any credential. Treating it as
+an unknown was an error in the earlier draft.
+
+**`LABS_ROUTER_TOKEN` is the only real secret**, and it is not in either
+repository, in any local environment file, or in any `.wrangler` state. It
+exists in two places, both of them Sites deployment environments: Labs' and
+Maritime's. It has to be read from the Sites console.
+
+### Two consequences worth stating plainly
+
+**Migrating Labs does not remove this product's dependency on Sites.** The
+Maritime console is a separate repository with its own Sites project, and after
+the migration `/maritime` still terminates there. The Labs catalog would deploy
+from CI; the console behind its most important route still would not. That
+halves the benefit, and the console is the surface that has already gone stale
+once. It deserves its own migration, and this one does not deliver it.
+
+**The token is shared state across two deployments.** The Worker needs the same
+value the Maritime origin already expects, so the cutover copies the token
+rather than rotating it. Rotating it means changing both sides together, and one
+of those sides publishes only from a Sites session. Copy first, migrate, and
+treat rotation as its own coordinated change once both ends can be deployed
+normally.
 
 ## The image route: a defect that already exists, not a new risk
 
@@ -125,9 +158,9 @@ default.
 
 **1. Deploy to a temporary hostname.** `wrangler deploy` to
 `ratify-labs.<subdomain>.workers.dev` with the real secrets set. Set
-`MARITIME_ORIGIN` and `LABS_ROUTER_TOKEN` with `wrangler secret put`, so they
-are never committed, never placed in `wrangler.json` `vars`, and never echoed by
-a workflow step.
+`LABS_ROUTER_TOKEN` with `wrangler secret put`, so it is never committed, never
+placed in `wrangler.json` `vars`, and never echoed by a workflow step.
+`MARITIME_ORIGIN` is a plain var and can live in configuration.
 
 **2. Verify the site on that hostname**, not on the production domain:
 
@@ -150,9 +183,9 @@ the step that settles the network-path questions:
   through. Restore the real token afterwards and re-confirm ALLOW.
 - **non-2xx and timeout behave as written**: any non-2xx from the origin becomes
   a 502, and the 10 second `AbortSignal.timeout` fires rather than hanging.
-- **the origin does not additionally require a network identity.** If the
-  Maritime side also restricts by IP, ASN, or another attribute of the caller,
-  a correct token is not sufficient and this is where it surfaces.
+- **the Host header reaches the origin as the provider hostname.** This is the
+  origin's other gate, and a proxy or redirect that rewrote Host would produce a
+  404 that looks like a token failure. Distinguish the two before debugging.
 
 **4. Run the boundary tests against the deployed Worker**, not only in-process.
 `tests/rendered-html.test.mjs` already covers the provider hostname rejection
@@ -221,13 +254,13 @@ rollback a code change under time pressure.
 
 ## What this needs from someone else
 
-- `MARITIME_ORIGIN` and `LABS_ROUTER_TOKEN`, from whoever holds the Sites
-  environment.
+- `LABS_ROUTER_TOKEN`, read from the Sites deployment environment. This is the
+  only blocking unknown. `MARITIME_ORIGIN` is already known.
 - A Cloudflare account decision: the account holding `ratify-marketing`,
   `ratify-web`, and `ratify-maritime-demo-proxy` is the obvious home, and would
   put the whole product on one account.
-- Confirmation from the Maritime side that its router-token check does not also
-  depend on the caller's network identity.
+Nothing else. The question about the origin requiring a network identity is
+answered above, from its source and confirmed live.
 
 ## Recommendation
 
