@@ -107,26 +107,33 @@ Routes and protocol registry slugs are deliberately allowed to differ: a route
 is chosen for a reader, a slug for a repository. `scripts/check-routes.mjs`
 asserts the mapping so the difference stays deliberate.
 
+## Continuous integration
+
+Every pull request and every push to `main` runs the same gate: the route
+registry, the build, the tests, the type check, the linter, and a dependency
+audit at high severity. The route registry runs first, so a route pointing at an
+unpublished reference fails before anything is built.
+
+The linter is in the gate deliberately. `npm test` builds and tests without
+linting, which is how three lint errors reached `main`.
+
 ## Deployment
 
-Merging to `main` deploys, once every check passes: the route registry, the
-build, the tests, the type check, the linter, and a dependency audit at high
-severity. The deploy then asks the public URL what it is serving and fails if
-any route does not answer, because a green deploy job is not evidence that the
-site changed.
+**This repository does not deploy itself.** Publishing is a manual step on the
+hosting platform, and that is a known gap rather than a design: changes can merge
+here and not reach the public site. Four catalog routes are in `main` and absent
+from production for that reason.
 
-The deploy needs two repository secrets, under
-**Settings → Secrets and variables → Actions**:
+A deploy job was written and removed before merging. It would have published a
+Cloudflare Worker while the domain still resolves elsewhere, then confirmed the
+untouched production site was serving and reported success: a green check for a
+deploy that changed nothing.
 
-| Secret | What it is |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | A token with Workers Scripts write on the account that owns the `ratify-labs` Worker |
-| `CLOUDFLARE_ACCOUNT_ID` | That account's ID |
-
-The job **fails** rather than skipping when either is absent. A deploy that
-quietly does nothing is the failure this pipeline exists to prevent: three pull
-requests merged on 2026-08-30 and the site stayed on the previous build because
-the manual step had not happened and nothing said so.
+Two documents cover the fix. [`docs/SITES-SESSION-RUNBOOK.md`](docs/SITES-SESSION-RUNBOOK.md)
+is the immediate step, publishing what is already merged and capturing the
+deployed artifact. [`docs/HOSTING-MIGRATION-SCOPE.md`](docs/HOSTING-MIGRATION-SCOPE.md)
+scopes moving hosting so that deployment can be automated, including the failure
+modes that make it more delicate than it looks.
 
 Read [`docs/PRODUCT-REQUIREMENTS.md`](docs/PRODUCT-REQUIREMENTS.md) before
 adding a catalog entry or route.
