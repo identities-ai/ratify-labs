@@ -1,25 +1,31 @@
 name: CI
 
-# Verify on every pull request and on main, then deploy what main verified.
+# Verify every change. This workflow does not deploy.
 #
 # Until now this repository had no CI at all: three pull requests merged with no
 # checks reported, verified only by whatever their author happened to run
 # locally. That is also how three lint errors reached main, because `npm test`
 # builds and tests without linting.
+#
+# Deployment is deliberately absent. The site is served from OpenAI Sites, and
+# the domain does not resolve to a Cloudflare Worker, so a `wrangler deploy`
+# step here would publish a Worker that nothing routes to and then confirm the
+# unchanged Sites deployment was still serving. It would report success for a
+# deploy that changed nothing, which is the failure this pipeline exists to
+# catch. Deployment lands with the hosting migration, once the domain resolves
+# to something this workflow can actually publish to. See
+# docs/HOSTING-MIGRATION-SCOPE.md.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# Nothing here writes to the repository. The deploy job talks to Cloudflare with
-# its own credential, not with this token.
 permissions:
   contents: read
 
 concurrency:
-  # One run per branch. A second push supersedes the first rather than racing it
-  # to the same deployment.
+  # One run per branch. A second push supersedes the first rather than racing it.
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -58,68 +64,3 @@ jobs:
 
       - name: Dependency advisories
         run: npm audit --audit-level=high
-
-  deploy:
-    name: Deploy
-    needs: verify
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://labs.ratifyprotocol.com
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      # Fails rather than skips when the credentials are absent. A deploy job
-      # that quietly does nothing is the problem this pipeline exists to fix:
-      # three pull requests merged today and the site stayed on the old build
-      # because nobody noticed the manual step had not happened.
-      - name: Require deployment credentials
-        env:
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          missing=""
-          [ -z "$TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
-          [ -z "$ACCOUNT" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing repository secret(s):$missing"
-            echo "Set them under Settings → Secrets and variables → Actions."
-            echo "The account must be the one that owns the ratify-labs Worker."
-            exit 1
-          fi
-
-      - run: npm ci
-      - run: npm run build
-
-      - name: Deploy to Cloudflare
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy
-
-      # A green deploy job is not proof that the site changed. This asks the
-      # public URL what it is serving.
-      - name: Confirm the deployment is serving
-        run: |
-          for attempt in $(seq 1 10); do
-            sleep 6
-            ok=1
-            for route in "" copilot google-adk langchain nvidia-openshell-nooa; do
-              code=$(curl -s -o /dev/null -w '%{http_code}' "https://labs.ratifyprotocol.com/$route")
-              if [ "$code" != "200" ]; then
-                echo "attempt $attempt: /$route returned $code"
-                ok=0
-              fi
-            done
-            if [ "$ok" = "1" ]; then
-              echo "every route is serving"
-              exit 0
-            fi
-          done
-          echo "::error::Routes did not serve after the deploy."
-          exit 1
