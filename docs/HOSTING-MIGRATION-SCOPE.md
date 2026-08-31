@@ -146,130 +146,146 @@ Recommendation: migrate first, then bind Images as a separate change with its
 own before-and-after evidence, so the byte counts above become the baseline it
 has to beat.
 
-## Verification, in order
+## Scope boundary
 
-Nothing below moves DNS until the step before it has passed.
+"Everything on Cloudflare Workers" is too broad, and stating it loosely would
+mislead. Three surfaces are in scope: the Labs catalog, the Maritime console,
+and the scenario proxy already running there. The agent and receiver are Docker
+workloads on the Maritime platform performing hybrid Ed25519 and ML-DSA-65
+operations. They cannot run on Workers and are not part of this.
 
-**0. Check the Worker configuration before deploying anything.** The
-`wrangler.json` is generated on every build, so it is worth reading rather than
-assuming: Worker name, `compatibility_date`, `nodejs_compat`, and the `ASSETS`
-directory binding. Set the staging hostname explicitly rather than inheriting a
-default.
+## The sequence
 
-**1. Deploy to a temporary hostname.** `wrangler deploy` to
-`ratify-labs.<subdomain>.workers.dev` with the real secrets set. Set
-`LABS_ROUTER_TOKEN` with `wrangler secret put`, so it is never committed, never
-placed in `wrangler.json` `vars`, and never echoed by a workflow step.
-`MARITIME_ORIGIN` is a plain var and can live in configuration.
+Reviewed and agreed. The governing constraint is that **the two cutovers are
+never combined**, because the console migration and the transport change are
+each reversible alone and not reversible together.
 
-**2. Verify the site on that hostname**, not on the production domain:
+| # | Step | Reversible by |
+|---|---|---|
+| 1 | Merge the verification-only CI change | Revert; nothing is deployed |
+| 2 | Deploy Labs to a staging Worker hostname, console untouched | Delete the staging Worker |
+| 3 | Test every Labs route, asset, 404, and the `/maritime` proxy directly on staging | Nothing to reverse |
+| 4 | Cut Labs production DNS over, existing token path unchanged | CNAME back to Sites |
+| 5 | Deploy the console with **both** authentication paths supported | Redeploy the previous console |
+| 6 | Test the service binding on a staging Worker | Delete the staging Worker |
+| 7 | Cut the console over, after staging and production checks pass | Both paths still work |
+| 8 | Remove the public token path in a later cleanup release | Separate, unhurried change |
+
+Step 5 is what makes step 7 safe. The console temporarily accepts the existing
+authenticated public path **and** the service binding, so at every moment before
+step 8 there is a working fallback. Removing the old path first is what would
+make a rollback impossible, which is why it is last and separate.
+
+Step 2 is safe to run alone only if all of the following hold. Any exception
+means it is no longer the independent step it appears to be:
+
+- the console is unchanged
+- `PROVIDER_HOST` remains the existing console hostname
+- `LABS_ROUTER_TOKEN` is copied into the Worker secret exactly
+- the `/maritime` path allowlist is unchanged
+- deployment verification targets the new Worker hostname directly
+
+## Three requirements that apply to every step
+
+**Staging Workers get unique hostnames, and checks target them directly.** A
+post-deploy check that requests `labs.ratifyprotocol.com` is not checking what
+was just deployed until DNS has moved. This is the exact shape of the deploy job
+removed from PR #4.
+
+**Every check verifies artifact identity, not HTTP status.** A 200 proves
+something is serving, not that it is the thing just built. Checks assert Worker
+version or a deployment identifier. Without that, a stale deployment produces a
+green check, which has already happened twice on this surface.
+
+**The console is versioned independently of the agent and receiver image pins.**
+Its repository also builds those images and carries delegation SHA pins under
+weekly renewal. A console deploy job must not imply those workloads were
+updated, and must not be able to ship a console that disagrees with the pinned
+images.
+
+## What to verify on staging, before any DNS change
+
+**Labs, on the staging hostname:**
 
 - `/` and all four reference routes return 200
-- content is present in the server HTML, not only after hydration
-- static assets resolve: logo, favicon, `og.jpg`
+- content is in the server HTML, not only after hydration
+- assets resolve: logo, favicon, `og.jpg`
 - OG and canonical metadata are correct and do not name the staging hostname
 - an unknown path returns 404
 
-**3. Exercise `/maritime` against the real origin, from the new host.** This is
-the step that settles the network-path questions:
+**The `/maritime` proxy, from the staging Worker:**
 
-- `/maritime` returns 200 and renders the console
-- `/maritime/_next/static/...` resolves
+- `/maritime` returns 200 and renders; `/maritime/_next/static/...` resolves
 - a path outside the allowlist, for example `/maritime/api/anything`, returns 404
-- a `POST /maritime` returns 405
+- `POST /maritime` returns 405
 - the response carries `X-Ratify-Labs-Reference: maritime` and no `Set-Cookie`
-- **token failure is observable**: with a deliberately wrong `LABS_ROUTER_TOKEN`,
-  the origin refuses and the Worker returns 502 rather than passing anything
-  through. Restore the real token afterwards and re-confirm ALLOW.
-- **non-2xx and timeout behave as written**: any non-2xx from the origin becomes
-  a 502, and the 10 second `AbortSignal.timeout` fires rather than hanging.
-- **the Host header reaches the origin as the provider hostname.** This is the
-  origin's other gate, and a proxy or redirect that rewrote Host would produce a
-  404 that looks like a token failure. Distinguish the two before debugging.
+- with a deliberately wrong token the origin refuses and the Worker returns 502,
+  passing nothing through; restore the real token and re-confirm ALLOW
+- a non-2xx from the origin becomes 502, and the 10 second timeout fires
+- the Host reaching the origin is the provider hostname. A rewritten Host
+  produces a 404 that looks exactly like a token failure; distinguish them
+  before debugging.
 
-**4. Run the boundary tests against the deployed Worker**, not only in-process.
-`tests/rendered-html.test.mjs` already covers the provider hostname rejection
-and the read-only path allowlist; point them at the real deployment.
+**The service binding, at step 6.** The console receives a request carrying the
+Labs hostname, so everything that derives from its own hostname has to be
+checked, and each of these fails silently rather than loudly:
 
-**5. Compare the two hosts byte for byte.** The same routes on
-`labs.ratifyprotocol.com` and the staging hostname should differ only in
-host-specific headers. A diff is cheaper than an opinion about whether anything
-changed.
+- `basePath` resolution
+- generated asset URLs
+- redirects
+- canonical and OpenGraph URLs
+- any absolute URL construction
 
-**6. Move DNS**, with the Sites deployment left in place and unchanged.
+Decide deliberately whether the binding preserves or rewrites Host, rather than
+discovering the answer from a broken page.
 
-**7. Confirm the domain actually resolves to the Worker before smoke-testing
-it.** This is the one trap that would waste the whole exercise: until the custom
-domain is attached and DNS has propagated, every request to
-`labs.ratifyprotocol.com` is still answered by Sites, so a green smoke test
-proves nothing about the Worker. Check the resolution and a Worker-specific
-response header first, then re-run steps 2 through 4 against the custom domain.
+## Keep the allowlist narrow
 
-**8. Test the rollback once, deliberately**, rather than trusting that it works.
-Repoint the CNAME back to Sites, confirm the site still serves, then repoint
-forward again. A rollback that has never been executed is a plan, not a
-rollback.
+The `/maritime` allowlist admits five path shapes and nothing else. A service
+binding makes widening it feel harmless. It is not: the allowlist is what keeps
+the routed surface a known set rather than whatever the console happens to
+expose. A new font, image, or route should require an explicit allowlist change
+with its own test, which is the current behaviour and should stay.
 
-**9. Record the evidence `LAB-014` requires**: catalog revision, Worker version,
-routed reference revision, and the live allow and deny observations.
+## Blockers, and what only a person can do
 
-**10. Only then remove the Sites artifacts** and update `PRIVACY.md`, since the
-cookie it discloses will no longer be set.
+**`LABS_ROUTER_TOKEN` gates step 2 completely.** It exists only in the two Sites
+deployment environments and must be read from the Sites console. If it cannot be
+retrieved, step 2 does not proceed. Do not guess it, and do not rotate it
+without validating the console side, because rotation is a coordinated change
+across both deployments and one of them publishes by hand.
 
-## How this splits into pull requests
+**DNS and custom-domain attachment cannot be automated here.** The available
+Cloudflare token has `workers`, `workers_scripts`, and `workers_routes` write,
+but `zone` read only. Deploying Workers is scriptable; attaching
+`labs.ratifyprotocol.com` is not. Partial automation is acceptable only if the
+manual boundary is explicit and the check after cutover verifies the actual
+Worker rather than the domain.
 
-Three changes, kept separate so that a problem in one does not hold the others.
+## On the image route
 
-| PR | Contains |
-|---|---|
-| **Verification** (#4) | CI that verifies every change. No deployment. |
-| **Migration** | Worker deployment, secrets, staging validation, DNS cutover, rollback, and the deploy job reintroduced. |
-| **Labs content** | Catalog and reference changes, independent of hosting. |
+Cloudflare Images is not required for current behaviour, because current
+behaviour is passthrough. Nothing regresses by migrating without it. Passthrough
+must never be described as optimization, in copy or in a check. If the account
+will not carry Cloudflare Images, delete the optimizer branch rather than leave
+it silently falling back.
 
-## PR #4 has to change before it merges
+## What does not change
 
-PR #4 adds CI to a repository that had none, and its verify job is right and
-should land. Its deploy job is wrong against today's hosting, in a way that
-would produce a green check for a deploy that changed nothing.
-
-`npx wrangler deploy` would create a `ratify-labs` Worker on whichever account
-the credentials belong to. Nothing routes to it, because the domain still
-resolves to Sites. The job's own confirmation step then curls
-`labs.ratifyprotocol.com` and gets 200 from the Sites deployment it did not
-touch, and reports success.
-
-That is the same false-green shape this pipeline was written to eliminate. The
-deploy job should be removed from PR #4 and reintroduced with the migration,
-once there is a Worker the domain actually resolves to. Merging verify alone
-still fixes the problem that prompted the pull request: three merges reaching
-main with no checks.
-
-## Rollback
-
-Repoint the CNAME. The Sites deployment is untouched throughout, so rollback is
-a DNS change and not a redeploy, and step 8 executes it once rather than
-assuming it works. This is the reason step 7 is last: removing
-`.openai/hosting.json` before the new host has proven itself would make the
-rollback a code change under time pressure.
-
-## What this needs from someone else
-
-- `LABS_ROUTER_TOKEN`, read from the Sites deployment environment. This is the
-  only blocking unknown. `MARITIME_ORIGIN` is already known.
-- A Cloudflare account decision: the account holding `ratify-marketing`,
-  `ratify-web`, and `ratify-maritime-demo-proxy` is the obvious home, and would
-  put the whole product on one account.
-Nothing else. The question about the origin requiring a network identity is
-answered above, from its source and confirmed live.
+The `PRIVACY.md` note stays as written. An earlier draft of this scope said the
+disclosed cookie would stop being set after the migration. That was wrong: the
+note already describes it as "Cloudflare's necessary `__cf_bm` cookie", Sites
+sits behind Cloudflare, and the cookie is set today and after. No privacy change
+follows from this work.
 
 ## Recommendation
 
-Worth doing, and smaller than it appears because the artifact is already a
-Worker. The strongest argument is not effort: it is that every other public
-surface in this product already deploys from Cloudflare with credentials that
-exist, and this one cannot deploy from CI at all. A catalog that can only be
-published by one tool in one kind of session will go stale again.
+Proceed, in the eight steps above, and do not combine the cutovers. The goal is
+CI-driven Workers deployment reached by a reversible, staged transition, not the
+shortest path to the tidiest architecture.
 
-The honest counterweight is that `/maritime` is a working, evidenced boundary
-and this touches its network path. That is what the staged verification is for,
-and none of it requires a DNS change to learn the answer.
+The service binding is genuinely better than the token proxy: it deletes a
+shared secret, a hostname coupling, and roughly twenty lines of hand-rolled
+comparison, and it removes the console's public hostname. That is the
+destination. It is not a reason to arrive in one move, and step 8 is where the
+deletion belongs.
