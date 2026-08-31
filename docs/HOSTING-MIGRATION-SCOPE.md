@@ -264,11 +264,19 @@ Worker rather than the domain.
 
 ## On the image route
 
-Cloudflare Images is not required for current behaviour, because current
-behaviour is passthrough. Nothing regresses by migrating without it. Passthrough
-must never be described as optimization, in copy or in a check. If the account
-will not carry Cloudflare Images, delete the optimizer branch rather than leave
-it silently falling back.
+The optimizer is dead code, and the route real traffic uses is a redirect.
+
+The catalog's HTML requests `/_next/image`, not `/_vinext/image`. That path
+302-redirects to the original file: `/_next/image?url=%2Fratify-logo.png&w=64&q=75`
+returns `Location: /ratify-logo.png`, and the followed response is the source PNG
+at 16456 bytes. The Worker's `/_vinext/image` branch, which is the only code that
+touches the `IMAGES` binding, is referenced by nothing in the built output.
+
+So images today are unoptimized and pay an extra round trip, on both the catalog
+and the console. Cloudflare Images is not required to preserve this, because
+there is nothing to preserve. Passthrough must never be described as
+optimization. The branch should either be wired to a real binding with
+before-and-after byte counts, or deleted, and deleting it is the smaller change.
 
 ## What does not change
 
@@ -278,7 +286,78 @@ note already describes it as "Cloudflare's necessary `__cf_bm` cookie", Sites
 sits behind Cloudflare, and the cookie is set today and after. No privacy change
 follows from this work.
 
+## A hazard both plans share
+
+Assets are content-hashed, so two builds of identical source produce identical
+filenames and a request that crosses between stacks still resolves. The Sites
+deployment is not identical source: it is stale, which is the reason this work
+exists.
+
+During DNS propagation one hostname is answered by both stacks. A visitor can
+receive HTML from one and request its assets from the other, and those hashes
+will not exist there. The page breaks rather than degrades.
+
+This is not a property of either plan. It applies equally to the staged plan's
+Labs cutover and to the parallel pair's single flip, and it was missed in both
+reviews. The clean fix is to republish the current commit to Sites before any
+cutover, so both stacks share content hashes. That needs a Sites session.
+Without it, the window is real and has to be accepted deliberately rather than
+discovered.
+
+Related: the build id is a fresh UUID per build, proven by building identical
+source twice and getting `4c277bde-bc69-45c6-9536-0932c4cfdedf` then
+`55f87b30-78b3-47b1-8f59-b844d6a94910`. Only the build and SSG manifests live
+under it and the served HTML does not reference them, so severity is low, but it
+should be pinned with `generateBuildId` so builds are reproducible.
+
+## Alternative evaluated: the parallel pair
+
+Build a complete second pair on Workers, leave the Sites pair untouched, and
+move the hostname once. Its attraction is that it never needs
+`LABS_ROUTER_TOKEN`, which is the blocker that currently stops everything.
+
+What the checks found:
+
+| Question | Answer |
+|---|---|
+| Service binding configurable | Yes, via `localBindingConfig` in `vite.config.ts`, since the Worker config is generated |
+| Console under a binding | `basePath` is path-based and safe; `metadataBase` is hardcoded to the production URL, so canonical and OpenGraph do not derive from Host |
+| Token can deploy both and bind them | Yes. Bindings ship with the script upload |
+| Token can attach the domain | No. `zone` is read only |
+| Artifact identity verifiable | Yes, `wrangler versions list` returns a version id |
+| Rollback target stays valid | Yes, while the Sites pair is never modified. It restores stale content |
+
+Two consequences follow. The hardcoded `metadataBase` means **staging cannot
+validate canonical or OpenGraph URLs**, because they will claim the production
+hostname wherever they run. And the console's `PROVIDER_HOST` check fails under
+a binding, because the console now sees the catalog's hostname.
+
+### The failure that would make it unsafe
+
+Deleting the console's host check is what makes the binding elegant, and it is
+also what would leave the console unauthenticated. Staging requires a public
+route on that Worker, and with the check gone the binding becomes the intended
+path rather than the only one.
+
+The fix is not to delete the check. Keep it with `PROVIDER_HOST` set to the
+catalog hostname, add a freshly generated token between the two Workers, and
+confirm the console carries no public route in production. That is defence in
+depth, and it still never reads the old token.
+
 ## Recommendation
+
+Two routes are now on the table and the choice is not yet made.
+
+The staged plan is agreed and safe, and is blocked on a token that can only be
+read from a Sites session. The parallel pair is not blocked, keeps production
+untouched until one reversible flip, and rolls back by hostname rather than by
+republishing something that publishes by hand. It moves two surfaces at once,
+which is the objection it has to answer directly.
+
+Whichever is chosen, the shared asset hazard above is a precondition, not a
+detail.
+
+The paragraph below states the case for the staged plan as originally agreed.
 
 Proceed, in the eight steps above, and do not combine the cutovers. The goal is
 CI-driven Workers deployment reached by a reversible, staged transition, not the
