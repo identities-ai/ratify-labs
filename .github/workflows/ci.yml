@@ -102,7 +102,7 @@ jobs:
           }
           jq '.vars = {
             "LABS_HOSTNAME": "labs.ratifyprotocol.com",
-            "MARITIME_ORIGIN": "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+            "MARITIME_ORIGIN": "https://ratify-maritime-demo-console-production.chuks-04d.workers.dev"
           }' "$cfg" > "$cfg.tmp"
           mv "$cfg.tmp" "$cfg"
           jq -e '.vars.LABS_HOSTNAME and .vars.MARITIME_ORIGIN' "$cfg" >/dev/null

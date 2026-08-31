@@ -67,7 +67,7 @@ Worker carried two environment variables:
 
 ```
 env.LABS_HOSTNAME     "labs.ratifyprotocol.com"
-env.MARITIME_ORIGIN   "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+env.MARITIME_ORIGIN   "https://ratify-maritime-demo-console-production.chuks-04d.workers.dev"
 ```
 
 Only `LABS_ROUTER_TOKEN` is a secret, and secrets survive a deploy. Variables do
@@ -159,7 +159,7 @@ Added as a second job in `.github/workflows/ci.yml`, after `verify`.
           # /maritime returns 503 while every other route stays green.
           jq '.vars = {
                 "LABS_HOSTNAME": "labs.ratifyprotocol.com",
-                "MARITIME_ORIGIN": "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+                "MARITIME_ORIGIN": "https://ratify-maritime-demo-console-production.chuks-04d.workers.dev"
               }' "$CFG" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
           jq -e '.vars.MARITIME_ORIGIN and .vars.LABS_HOSTNAME' "$CFG" >/dev/null \
             || { echo "::error::variables were not restored"; exit 1; }
