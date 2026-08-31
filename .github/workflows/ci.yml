@@ -1,0 +1,66 @@
+name: CI
+
+# Verify every change. This workflow does not deploy.
+#
+# Until now this repository had no CI at all: three pull requests merged with no
+# checks reported, verified only by whatever their author happened to run
+# locally. That is also how three lint errors reached main, because `npm test`
+# builds and tests without linting.
+#
+# Deployment is deliberately absent. The site is served from OpenAI Sites, and
+# the domain does not resolve to a Cloudflare Worker, so a `wrangler deploy`
+# step here would publish a Worker that nothing routes to and then confirm the
+# unchanged Sites deployment was still serving. It would report success for a
+# deploy that changed nothing, which is the failure this pipeline exists to
+# catch. Deployment lands with the hosting migration, once the domain resolves
+# to something this workflow can actually publish to. See
+# docs/HOSTING-MIGRATION-SCOPE.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  # One run per branch. A second push supersedes the first rather than racing it.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      # Runs before the build, because a route pointing at an unpublished
+      # reference should fail the pipeline rather than be built and shipped.
+      - name: Route registry
+        run: npm run check:routes
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: node --test tests/*.test.mjs
+
+      - name: Types
+        run: npm run typecheck
+
+      # In the gate deliberately. A check that is not in the gate is not run,
+      # and this one has already let errors through.
+      - name: Lint
+        run: npm run lint
+
+      - name: Dependency advisories
+        run: npm audit --audit-level=high
