@@ -53,7 +53,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
     if (!part) continue;
     const { html, diagrams } = await renderSection(part.body);
     // Diagram indices are page-wide so each placeholder is unique.
-    let offset = allDiagrams.length;
+    const offset = allDiagrams.length;
     rendered[id] = {
       html: html.replace(/data-diagram="(\d+)"/g, (_, n) => `data-diagram="${offset + Number(n)}"`),
       diagrams,
@@ -110,7 +110,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
       </div>
       <div className="ref-next-links">
         <a className="primary" href={entry.referenceHref}>Read the full reference <span>↗</span></a>
-        <a href="/maritime">See a hosted lab: Maritime <span>→</span></a>
+        <Link href="/maritime">See a hosted lab: Maritime <span>→</span></Link>
       </div>
     </section>
 
