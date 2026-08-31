@@ -344,6 +344,83 @@ catalog hostname, add a freshly generated token between the two Workers, and
 confirm the console carries no public route in production. That is defence in
 depth, and it still never reads the old token.
 
+## The live deployment is four commits behind, and the reference pages are not on it
+
+Measured before anything else here matters. On the live catalog:
+
+| Route | Status |
+|---|---|
+| `/` | 200 |
+| `/maritime` | 200 |
+| `/copilot` | **404** |
+| `/google-adk` | **404** |
+| `/langchain` | **404** |
+| `/nvidia-openshell-nooa` | **404** |
+
+The live markup contains no links to any of them. The deployment predates the
+change that added them, so the reference pages, the catalog wording, and the
+dependency work are all present in the repository and absent from the public
+site. This is the cost of the publishing gap stated concretely: not a stale
+site, an undelivered one.
+
+It also means a rollback to the previous deployment is a rollback to a catalog
+without reference pages. That is acceptable as a temporary safety net and is not
+acceptable as a resting state.
+
+## Build output is not reproducible from source
+
+Two builds of the same commit, on the same machine, minutes apart:
+
+| Asset | Build 1 | Build 2 | Live |
+|---|---|---|---|
+| Stylesheet | `index.D_y7JSE8.css` | `index.D_y7JSE8.css` | `index.D_y7JSE8.css` |
+| Script | `index-DKG4MtPt.js` | `index-JNFJEPbN.js` | `index-CfMVhPqv.js` |
+
+Stylesheet names are content-derived and stable, and the stylesheet built from
+the old commit matches the live one exactly, which confirms that commit is the
+deployed source. **Script names are not stable across builds of identical
+source.**
+
+This has a consequence for the agreed plan. "Rebuild from the same commit and
+compare manifests" does not produce matching script names, so it cannot be used
+to make two deployments interchangeable. Only the same **build artifact** can do
+that, not the same commit.
+
+## The reverse direction cannot be closed from here
+
+Carrying the previous generation's files in the new deployment covers a visitor
+holding old markup who reaches the new deployment. It does not cover the
+reverse: new markup referencing script names that the previous deployment does
+not contain and cannot be made to contain, because writing to it needs a session
+this workspace does not have.
+
+The two directions are not equally likely, and saying so is not the same as
+dismissing one:
+
+- **Old markup, new deployment.** Common. Any tab left open across the change,
+  then navigating client side. Solved by carrying the 17 files, 444 KB.
+- **New markup, previous deployment.** Requires a resolver to move forward for
+  the document and back for its assets. Narrow and transient, and it cannot be
+  eliminated without write access to the previous deployment.
+
+The hostname is a DNS-only record, not proxied on this account:
+`labs.ratifyprotocol.com` is a CNAME to the provider with a 300 second TTL,
+whereas the apex resolves to this account's addresses. So the change is a real
+DNS change with a real propagation window, narrowable by lowering the TTL first
+but not removable.
+
+Two honest routes follow, and the choice is the reader's:
+
+1. **Obtain one session on the existing host.** Everything becomes
+   straightforward: publish one build artifact to both, or simply retrieve the
+   router token and take the staged plan instead.
+2. **Accept a narrow, stated residual risk** on the reverse direction, with the
+   TTL lowered beforehand and the change made during low traffic.
+
+The four-way check still applies and should be run whichever route is taken: old
+markup against each deployment, new markup against each deployment, with every
+referenced asset resolving.
+
 ## Decision: the parallel pair, with asset compatibility as a precondition
 
 Settled after a second review round. The parallel pair is preferred, not because
