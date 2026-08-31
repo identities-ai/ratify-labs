@@ -1,7 +1,9 @@
-# Proposal: deploying the Labs Worker from CI
+# Record: deploying the Labs Worker from CI
 
-Not implemented. This is a design for review. No workflow file is added by this
-change, and nothing here deploys.
+**Superseded as a proposal.** The deploy job shipped in #5, #6 and #7 and ran
+successfully on `main`. What is kept here is the reasoning, the hazards found
+while building it, and the rollback state, because those outlive the workflow
+file.
 
 ## Verified current state
 
@@ -16,7 +18,7 @@ Checked live rather than taken from a report.
 | Router credential reached the Worker | `/maritime` returns 200, so the Worker holds a token the console accepts |
 | The console is still on the previous host | the routed path is a proxy, not a second Worker |
 
-## Rollback: the two deployments now serve compatible assets
+## Rollback: compatible for one deploy, then not
 
 The Worker was originally built fresh rather than deployed from the archived
 artifact, so six of twenty one asset paths differed and a fallback would have
@@ -30,10 +32,23 @@ serve the same generation:
 archive, previous host, and Worker:  index-CDw4Ti2u.js
 ```
 
-All 21 asset paths referenced across the five catalog routes resolve in the
-archive, and the Worker serves that archive. A fallback to the previous host is
-now seamless for a visitor already holding markup, because both sides carry the
-same filenames.
+All 21 asset paths referenced across the five catalog routes resolved in the
+archive, and the Worker served that archive.
+
+**That property has since ended, as predicted.** The first automated deploy from
+`main` rebuilt, and the Worker now serves `index-CnKn1RFm.js` while the previous
+host still serves `index-CDw4Ti2u.js`. A fallback is again not seamless for a
+visitor already holding markup.
+
+This is expected rather than a regression. Every deploy from `main` rebuilds, and
+builds are not reproducible, so no deploy can preserve compatibility with a
+deployment that is no longer being rebuilt alongside it. The clean rollback was
+only ever a property of the one artifact deploy. Restoring it means deploying
+the archive again, which also reverts the Worker's code.
+
+The durable resolution is to retire the previous host, so there is nothing left
+to fall back to that could disagree. Until then, treat rollback as correct for a
+total failure, where visitors reload anyway, and not as a seamless revert.
 
 **How that last equivalence is established.** The Worker was compared directly
 against the archive, 21 of 21. The previous host could not be compared directly,
@@ -301,11 +316,9 @@ echoed. The router credential stays out of CI entirely. The Cloudflare token
 deliberately lacks zone write, so this job cannot alter DNS even if it were
 wrong.
 
-**Rollback.** Clean as of the artifact deploy recorded above: both deployments
-serve the same asset generation. Note that the first deploy from `main` ends
-that property, because the rebuild produces new script names. Either accept it,
-or retire the previous host before the next deploy so there is nothing to fall
-back to that could disagree.
+**Rollback.** Not seamless, and cannot be made so while both deployments exist
+and only one is rebuilt. Correct for a total failure. The resolution is retiring
+the previous host, not another artifact deploy.
 
 **Asset identity.** The fingerprint is the catalog's own script name. It changes
 on every build, which is what makes it a fingerprint, and it is read from the
@@ -323,9 +336,9 @@ says nothing about the console beyond the fact that the proxy still reaches it.
    unless something restores them, and losing `MARITIME_ORIGIN` returns 503 on
    `/maritime` while every other route stays green. This is the most likely way
    the proposed job breaks production, and the reason it asserts bindings.
-2. **Asset compatibility ends at the next deploy from `main`.** Today both
-   deployments match. A rebuild produces new script names, so the clean rollback
-   is temporary.
+2. **Asset compatibility has ended.** It lasted one deploy, as expected. It
+   cannot be restored except by deploying the archive again, which reverts the
+   Worker's code. Retiring the previous host is the real fix.
 3. **The console is still on the previous host** and still publishes by hand, so
    half the original problem remains. It has its own migration.
 4. **Unattended deploys on merge.** Recommend the environment gate until the job
