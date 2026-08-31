@@ -126,10 +126,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          value="$(npx wrangler deployments list --name ratify-labs --json | jq -r '
-            if type == "array" then .[0].id // empty
-            else .deployments[0].id // .items[0].id // empty end')"
-          echo "version=${value:-none}" >> "$GITHUB_OUTPUT"
+          # Reads versions[0].version_id of the CURRENT deployment. The previous
+          # expression read .[0].id: a deployment id, from the oldest entry. It
+          # was compared against a version id, so the two could never be equal
+          # and the change assertion below always passed.
+          value="$(npx wrangler deployments list --name ratify-labs --json \
+            | node scripts/deployed-version.mjs)"
+          test -n "$value" || { echo "::error::could not read the deployed version"; exit 1; }
+          echo "version=$value" >> "$GITHUB_OUTPUT"
 
       - name: Deploy the exact build artifact
         id: deploy
@@ -148,8 +152,9 @@ jobs:
           set -euo pipefail
           expected="${{ steps.deploy.outputs.version }}"
           before="${{ steps.before.outputs.version }}"
-          test "$expected" != "$before" || { echo "::error::deployment version did not change"; exit 1; }
-          echo "deployed new version $expected"
+          test -n "$expected" || { echo "::error::the deploy reported no version id"; exit 1; }
+          test "$expected" != "$before" || { echo "::error::deployment version did not change (still $expected)"; exit 1; }
+          echo "deployed new version $expected (was $before)"
 
       - name: Verify the live build fingerprint
         env:
