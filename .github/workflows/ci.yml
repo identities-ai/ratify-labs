@@ -1,20 +1,14 @@
 name: CI
 
-# Verify every change. This workflow does not deploy.
+# Verify every change and deploy the verified main build.
 #
 # Until now this repository had no CI at all: three pull requests merged with no
 # checks reported, verified only by whatever their author happened to run
 # locally. That is also how three lint errors reached main, because `npm test`
 # builds and tests without linting.
 #
-# Deployment is deliberately absent. The site is served from OpenAI Sites, and
-# the domain does not resolve to a Cloudflare Worker, so a `wrangler deploy`
-# step here would publish a Worker that nothing routes to and then confirm the
-# unchanged Sites deployment was still serving. It would report success for a
-# deploy that changed nothing, which is the failure this pipeline exists to
-# catch. Deployment lands with the hosting migration, once the domain resolves
-# to something this workflow can actually publish to. See
-# docs/HOSTING-MIGRATION-SCOPE.md.
+# The deploy job is restricted to pushes on main and uses the production
+# environment for an explicit approval boundary.
 on:
   push:
     branches: [main]
@@ -25,9 +19,10 @@ permissions:
   contents: read
 
 concurrency:
-  # One run per branch. A second push supersedes the first rather than racing it.
+  # Verification runs may be superseded. A production deployment must finish
+  # once it starts so a second push cannot cancel an upload halfway through.
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
@@ -64,3 +59,133 @@ jobs:
 
       - name: Dependency advisories
         run: npm audit --audit-level=high
+
+  deploy:
+    name: Deploy Worker
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://labs.ratifyprotocol.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN is not set"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      - name: Build the deployment artifact
+        run: npm run build
+
+      - name: Validate target and restore Worker variables
+        run: |
+          set -euo pipefail
+          cfg=dist/server/wrangler.json
+          test "$(jq -r '.name // empty' "$cfg")" = ratify-labs || {
+            echo "::error::generated config targets an unexpected Worker"; exit 1;
+          }
+          jq '.vars = {
+            "LABS_HOSTNAME": "labs.ratifyprotocol.com",
+            "MARITIME_ORIGIN": "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+          }' "$cfg" > "$cfg.tmp"
+          mv "$cfg.tmp" "$cfg"
+          jq -e '.vars.LABS_HOSTNAME and .vars.MARITIME_ORIGIN' "$cfg" >/dev/null
+
+      - name: Record build fingerprint
+        id: fingerprint
+        run: |
+          set -euo pipefail
+          mapfile -t scripts < <(find dist/client/_next/static -type f -name 'index-*.js' -print | sort)
+          test "${#scripts[@]}" -eq 1 || {
+            echo "::error::expected exactly one catalog index script, found ${#scripts[@]}"; exit 1;
+          }
+          fingerprint="$(basename "${scripts[0]}")"
+          echo "script=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "build fingerprint: $fingerprint"
+
+      - name: Record deployed version
+        id: before
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          value="$(npx wrangler deployments list --name ratify-labs --json | jq -r '
+            if type == "array" then .[0].id // empty
+            else .deployments[0].id // .items[0].id // empty end')"
+          echo "version=${value:-none}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the exact build artifact
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config dist/server/wrangler.json
+
+      - name: Require a new deployed version
+        id: after
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          value="$(npx wrangler deployments list --name ratify-labs --json | jq -r '
+            if type == "array" then .[0].id // empty
+            else .deployments[0].id // .items[0].id // empty end')"
+          test -n "$value" || { echo "::error::could not read deployed version"; exit 1; }
+          echo "after=$value"
+          test "$value" != "${{ steps.before.outputs.version }}" || {
+            echo "::error::deployment version did not change"; exit 1;
+          }
+
+      - name: Verify the live build fingerprint
+        env:
+          EXPECTED_SCRIPT: ${{ steps.fingerprint.outputs.script }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 10); do
+            html="$(curl -fsS -H 'Cache-Control: no-cache' https://labs.ratifyprotocol.com/ || true)"
+            if grep -Fq "$EXPECTED_SCRIPT" <<<"$html"; then
+              echo "live site serves $EXPECTED_SCRIPT"; exit 0
+            fi
+            echo "attempt $attempt: live site does not yet serve $EXPECTED_SCRIPT"
+            sleep 6
+          done
+          echo "::error::live site never served the new build fingerprint"; exit 1
+
+      - name: Verify routes and boundary
+        run: |
+          set -euo pipefail
+          check() {
+            expected="$2"
+            actual="$(curl -fsS -o /dev/null -w '%{http_code}' -H 'Cache-Control: no-cache' "https://labs.ratifyprotocol.com$1" || true)"
+            test "$actual" = "$expected" || { echo "::error::$3 expected $expected got $actual"; return 1; }
+            echo "ok $3"
+          }
+          check / 200 'GET /'
+          check /copilot 200 'GET /copilot'
+          check /google-adk 200 'GET /google-adk'
+          check /langchain 200 'GET /langchain'
+          check /nvidia-openshell-nooa 200 'GET /nvidia-openshell-nooa'
+          check /maritime 200 'GET /maritime'
+          check /this-route-does-not-exist 404 'unknown route'
+          check /maritime/api/anything 404 'denied maritime path'
+          post="$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://labs.ratifyprotocol.com/maritime)"
+          test "$post" = 405 || { echo "::error::POST /maritime expected 405 got $post"; exit 1; }
+          header="$(curl -fsS -D - -o /dev/null https://labs.ratifyprotocol.com/maritime | awk -F': ' 'tolower($1)=="x-ratify-labs-reference" {gsub("\r", "", $2); print $2; exit}')"
+          test "$header" = maritime || { echo "::error::unexpected reference header: $header"; exit 1; }
