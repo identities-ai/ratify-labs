@@ -421,7 +421,23 @@ The four-way check still applies and should be run whichever route is taken: old
 markup against each deployment, new markup against each deployment, with every
 referenced asset resolving.
 
-## Decision: the parallel pair, with asset compatibility as a precondition
+## Superseded: a publishing session comes first
+
+The parallel pair is no longer the next step. One session on the existing host
+publishes the reference pages, which have never been public, and captures the
+exact artifact that makes two deployments interchangeable. That is worth more
+than either migration route and it unblocks the cleaner one.
+
+After it, the staged token-preserving plan is preferred: the captured artifact
+removes the mixed-generation asset problem entirely, and the previous deployment
+remains a working rollback target. The parallel pair stays viable only if that
+access cannot be recovered, and choosing it means accepting a propagation risk
+that cannot be fully removed.
+
+The runbook for that session is `SITES-SESSION-RUNBOOK.md`. The evaluation below
+is kept for the reasoning.
+
+## Evaluated: the parallel pair, with asset compatibility as a precondition
 
 Settled after a second review round. The parallel pair is preferred, not because
 it is more elegant, but because the token it avoids is inaccessible and the
