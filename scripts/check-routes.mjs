@@ -37,7 +37,7 @@ function registryEntry(slug) {
 
 const source = readFileSync(new URL("../app/lib/routes.ts", import.meta.url), "utf8");
 const entries = [...source.matchAll(
-  /\{\s*route:\s*"([^"]+)",\s*displayName:\s*"([^"]+)",(?:[\s\S]*?)slug:\s*"([^"]+)",\s*kind:\s*"([^"]+)"([\s\S]*?)\n  \},/g,
+  /\{\s*route:\s*"([^"]+)",\s*displayName:\s*"([^"]+)",(?:[\s\S]*?)slug:\s*"([^"]+)",\s*kind:\s*"([^"]+)"([\s\S]*?)\n {2}\},/g,
 )].map(([, route, displayName, slug, kind, rest]) => ({ route, displayName, slug, kind, rest }));
 
 const failures = [];
