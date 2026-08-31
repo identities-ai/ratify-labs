@@ -344,9 +344,91 @@ catalog hostname, add a freshly generated token between the two Workers, and
 confirm the console carries no public route in production. That is defence in
 depth, and it still never reads the old token.
 
+## Decision: the parallel pair, with asset compatibility as a precondition
+
+Settled after a second review round. The parallel pair is preferred, not because
+it is more elegant, but because the token it avoids is inaccessible and the
+previous deployment survives untouched as a rollback target.
+
+The combined cutover is accepted. The earlier objection to combining cutovers was
+grounded in non-symmetric rollback, and that does not apply here: the previous
+pair is never modified, the hostname points back to a complete working stack, and
+nothing has to be republished to restore service. Moving two surfaces at once is
+a real property of this route, and it is acceptable because the fallback is a
+whole deployment rather than a code path.
+
+The asset hazard is a **hard precondition**, not a risk to accept. A short broken
+window is not acceptable on a public site, and neither low traffic, pinned build
+ids, nor pre-warming addresses it, because none of them stops markup from one
+deployment requesting names absent from the other.
+
+### The hazard, measured
+
+Across the five catalog pages, the live deployment's markup references 28 unique
+asset paths. A fresh build of current source contains 11 of them, all fonts,
+which are addressed by a stable content hash. **17 are absent: 15 script chunks
+and 2 stylesheets, 444 KB in total.** All 17 return 200 today, so they can be
+captured.
+
+That is the exact size of the problem. During propagation a visitor holding the
+old markup and reaching the new deployment would fail on 17 files including both
+stylesheets, which is a broken page rather than a degraded one.
+
+An earlier count in this investigation said 23 missing, six of which appeared to
+be missing from the live site itself. That was a measurement error: the crawl
+matched the routed reference's asset prefix and dropped it, so six of the
+reference's own assets were attributed to the catalog. The live site is serving
+them correctly. The corrected figure is 17.
+
+### Two acceptable fixes
+
+1. **Republish the previous deployment from current source** before cutover, so
+   both sides share content hashes. Needs a session on the existing host.
+2. **Carry both generations in the new deployment.** Include the 17 captured
+   files alongside the new build, or proxy unrecognized historical asset paths to
+   the previous origin for a bounded window.
+
+Option 2 is self-contained, needs no session on the old host, and is bounded at
+444 KB. It is the route to take if a republish is not available. Whichever is
+chosen, the four combinations are tested explicitly: old markup with new assets,
+new markup with old assets, and each generation with its own.
+
+If neither is in place, the cutover does not happen.
+
+### On the routed surface's authentication
+
+State it accurately. Once the binding exists and the receiving surface carries no
+public route, **the binding is the access control**. An external caller cannot
+reach it by forging a Host header, because routing happens before the code does.
+The retained host check and the fresh credential are compatibility and
+defence in depth. They are not what makes it safe, and should never be described
+as though they are.
+
+The binding path should construct the internal request URL explicitly rather than
+forwarding whatever arrives, and a test must assert which hostname the receiving
+surface actually sees.
+
+### Sequence
+
+1. Build both Workers from the same commit.
+2. Deploy both to staging hostnames.
+3. Verify the binding, routes, metadata, assets, and the routed reference.
+4. Add old-asset compatibility, or republish the previous build.
+5. Test mixed-deployment requests across all four combinations.
+6. One DNS cutover.
+7. Keep the previous pair intact through an observation window.
+8. Remove legacy authentication and the optimizer branch in later, separate
+   changes.
+
+Step 8 stays separate. The optimizer branch is not on the deployed path, so
+removing it is cleanup rather than migration, and it needs its own build, route
+check, and a note recording that image handling is passthrough.
+
 ## Recommendation
 
-Two routes are now on the table and the choice is not yet made.
+Superseded by the decision above, and kept for the reasoning that led there.
+
+Two routes were on the table.
 
 The staged plan is agreed and safe, and is blocked on a token that can only be
 read from a Sites session. The parallel pair is not blocked, keeps production
