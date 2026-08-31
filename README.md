@@ -107,6 +107,27 @@ Routes and protocol registry slugs are deliberately allowed to differ: a route
 is chosen for a reader, a slug for a repository. `scripts/check-routes.mjs`
 asserts the mapping so the difference stays deliberate.
 
+## Deployment
+
+Merging to `main` deploys, once every check passes: the route registry, the
+build, the tests, the type check, the linter, and a dependency audit at high
+severity. The deploy then asks the public URL what it is serving and fails if
+any route does not answer, because a green deploy job is not evidence that the
+site changed.
+
+The deploy needs two repository secrets, under
+**Settings → Secrets and variables → Actions**:
+
+| Secret | What it is |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | A token with Workers Scripts write on the account that owns the `ratify-labs` Worker |
+| `CLOUDFLARE_ACCOUNT_ID` | That account's ID |
+
+The job **fails** rather than skipping when either is absent. A deploy that
+quietly does nothing is the failure this pipeline exists to prevent: three pull
+requests merged on 2026-08-30 and the site stayed on the previous build because
+the manual step had not happened and nothing said so.
+
 Read [`docs/PRODUCT-REQUIREMENTS.md`](docs/PRODUCT-REQUIREMENTS.md) before
 adding a catalog entry or route.
 
