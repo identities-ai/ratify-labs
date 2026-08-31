@@ -16,27 +16,71 @@ Checked live rather than taken from a report.
 | Router credential reached the Worker | `/maritime` returns 200, so the Worker holds a token the console accepts |
 | The console is still on the previous host | the routed path is a proxy, not a second Worker |
 
-## One correction to the handover
+## Rollback: the two deployments now serve compatible assets
 
-**The deployed Worker is not the archived artifact.** The archive was captured so
-both deployments would serve identical filenames. The Worker was built fresh
-instead, and six of twenty one asset paths differ:
+The Worker was originally built fresh rather than deployed from the archived
+artifact, so six of twenty one asset paths differed and a fallback would have
+left visitors requesting script names the previous host does not have.
+
+**Resolved 2026-08-31.** The archived artifact was deployed to the `ratify-labs`
+Worker as version `2441cb28-510a-427e-9381-d9b175c6497c`. Both deployments now
+serve the same generation:
 
 ```
-archive and previous host:  index-CDw4Ti2u.js
-deployed Worker:            index-TwZtTkZl.js
+archive, previous host, and Worker:  index-CDw4Ti2u.js
 ```
 
-Nothing is broken by this. The consequence is narrower and worth stating: **the
-rollback is no longer clean.** Falling back to the previous host means markup
-already held by a visitor references script names that host does not have. That
-is the mixed-generation hazard this scope spent four review rounds on, and it now
-applies to the rollback rather than to the cutover.
+All 21 asset paths referenced across the five catalog routes resolve in the
+archive, and the Worker serves that archive. A fallback to the previous host is
+now seamless for a visitor already holding markup, because both sides carry the
+same filenames.
 
-Rollback remains correct for a total failure, where visitors reload anyway. It is
-not a seamless revert, and it should not be described as one.
+**How that last equivalence is established.** The Worker was compared directly
+against the archive, 21 of 21. The previous host could not be compared directly,
+because the hostname now resolves to the Worker and that deployment's provider
+address is not known here. The chain is instead: while the previous host served
+the public hostname, its 21 referenced paths were verified present in the
+archive with catalog script `index-CDw4Ti2u.js`; the Worker now serves that same
+archive and the same script name. The equivalence is transitive and rests on the
+previous deployment not having been republished since. If a direct comparison is
+wanted, it needs that provider hostname.
 
-The archive stays useful as the last artifact known to match the previous host.
+### One thing the deploy would have broken
+
+The archived build's generated configuration declares `vars: {}`, while the live
+Worker carried two environment variables:
+
+```
+env.LABS_HOSTNAME     "labs.ratifyprotocol.com"
+env.MARITIME_ORIGIN   "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+```
+
+Only `LABS_ROUTER_TOKEN` is a secret, and secrets survive a deploy. Variables do
+not. Deploying the artifact unmodified would have dropped `MARITIME_ORIGIN`, and
+`routeMaritime` fails closed when it is absent, so `/maritime` would have
+returned 503 while every other route stayed green. Both variables were restored
+into the configuration before deploying and are present on the deployed version.
+
+**This is a standing hazard for any deploy from a generated configuration**, and
+the proposed workflow must account for it: a build produces `vars: {}` unless
+something puts them back. The workflow below therefore asserts the deployed
+bindings rather than assuming them.
+
+### Deployed state
+
+| | |
+|---|---|
+| Worker version | `2441cb28-510a-427e-9381-d9b175c6497c` |
+| Source artifact | `~/.ratify/labs-artifacts/labs-artifact-df33181.tar.gz` |
+| Worker code revision | `df33181`, one commit behind `main` |
+| Verified | six routes 200, unknown 404, `/maritime` 200 with reference header, denied path 404, `POST` 405, `workers.dev` 404 |
+
+The Worker now runs `df33181` while `main` is `309eb7f`, which added the
+configurable hostname. Production behaviour is identical, because the archived
+build hardcodes the correct hostname. The next deploy from `main` will rebuild
+and break asset compatibility with the previous host again. That is expected:
+the clean rollback is a property of today's state, not a permanent one, and it
+stops mattering once the previous host is retired.
 
 ## The design's central idea
 
@@ -90,12 +134,20 @@ Added as a second job in `.github/workflows/ci.yml`, after `verify`.
 
       # The generated config decides which Worker is written to. Read it rather
       # than trusting it, so a rename cannot silently deploy somewhere else.
-      - name: Confirm the deploy target
+      - name: Confirm the deploy target and restore variables
         run: |
           set -euo pipefail
-          NAME=$(jq -r '.name' dist/server/wrangler.json)
+          CFG=dist/server/wrangler.json
+          NAME=$(jq -r '.name' "$CFG")
           [ "$NAME" = "ratify-labs" ] || { echo "::error::would deploy to '$NAME'"; exit 1; }
-          echo "target=$NAME"
+          # A build emits vars:{}. Without this, MARITIME_ORIGIN is dropped and
+          # /maritime returns 503 while every other route stays green.
+          jq '.vars = {
+                "LABS_HOSTNAME": "labs.ratifyprotocol.com",
+                "MARITIME_ORIGIN": "https://ratify-maritime-lab.chuksy0x01.chatgpt.site"
+              }' "$CFG" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
+          jq -e '.vars.MARITIME_ORIGIN and .vars.LABS_HOSTNAME' "$CFG" >/dev/null \
+            || { echo "::error::variables were not restored"; exit 1; }
 
       # This build's script name. Unique to this build because builds are not
       # reproducible, which makes it a deployment fingerprint.
@@ -249,10 +301,11 @@ echoed. The router credential stays out of CI entirely. The Cloudflare token
 deliberately lacks zone write, so this job cannot alter DNS even if it were
 wrong.
 
-**Rollback.** Unchanged by this proposal and not clean, for the reason recorded
-above: the previous host serves a different asset generation. If a seamless
-rollback is wanted, deploy the archived artifact so both sides match, and do that
-before relying on rollback rather than during an incident.
+**Rollback.** Clean as of the artifact deploy recorded above: both deployments
+serve the same asset generation. Note that the first deploy from `main` ends
+that property, because the rebuild produces new script names. Either accept it,
+or retire the previous host before the next deploy so there is nothing to fall
+back to that could disagree.
 
 **Asset identity.** The fingerprint is the catalog's own script name. It changes
 on every build, which is what makes it a fingerprint, and it is read from the
@@ -265,13 +318,19 @@ says nothing about the console beyond the fact that the proxy still reaches it.
 
 ## Remaining risks
 
-1. **The rollback target is a different asset generation.** Recorded above.
-   Fixable by deploying the archived artifact once.
-2. **The console is still on the previous host** and still publishes by hand, so
+1. **Environment variables are not in the generated configuration.** A build
+   emits `vars: {}`, so any deploy drops `LABS_HOSTNAME` and `MARITIME_ORIGIN`
+   unless something restores them, and losing `MARITIME_ORIGIN` returns 503 on
+   `/maritime` while every other route stays green. This is the most likely way
+   the proposed job breaks production, and the reason it asserts bindings.
+2. **Asset compatibility ends at the next deploy from `main`.** Today both
+   deployments match. A rebuild produces new script names, so the clean rollback
+   is temporary.
+3. **The console is still on the previous host** and still publishes by hand, so
    half the original problem remains. It has its own migration.
-3. **Unattended deploys on merge.** Recommend the environment gate until the job
+4. **Unattended deploys on merge.** Recommend the environment gate until the job
    has proven itself.
-4. **`wrangler deployments list` output parsing.** The version is extracted with a
+5. **`wrangler deployments list` output parsing.** The version is extracted with a
    regex over human-readable output. A wrangler upgrade could change that format
    and turn the version check into a silent pass. Pin wrangler and treat an empty
    parse as a failure, which the proposed steps do.
