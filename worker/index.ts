@@ -10,15 +10,17 @@ interface Env {
   IMAGES: { input(stream: ReadableStream): { transform(options: Record<string, unknown>): { output(options: { format: string; quality: number }): Promise<{ response(): Response }> } } };
   LABS_ROUTER_TOKEN: string;
   MARITIME_ORIGIN: string;
+  LABS_HOSTNAME?: string;
 }
 
 interface ExecutionContext { waitUntil(promise: Promise<unknown>): void; }
 
-const LABS_HOST = "labs.ratifyprotocol.com";
+const DEFAULT_LABS_HOST = "labs.ratifyprotocol.com";
 const ROUTE_HEADER = "X-Ratify-Labs-Route";
 
-function isAllowedHost(hostname: string): boolean {
-  return hostname === LABS_HOST || hostname === "localhost" || hostname === "127.0.0.1";
+function isAllowedHost(hostname: string, configuredHost?: string): boolean {
+  const allowedHost = configuredHost || DEFAULT_LABS_HOST;
+  return hostname === allowedHost || hostname === "localhost" || hostname === "127.0.0.1";
 }
 
 function isMaritimePublicPath(pathname: string): boolean {
@@ -77,7 +79,7 @@ async function routeMaritime(request: Request, env: Env): Promise<Response> {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    if (!isAllowedHost(url.hostname)) return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    if (!isAllowedHost(url.hostname, env.LABS_HOSTNAME)) return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     if (isMaritimePublicPath(url.pathname)) return routeMaritime(request, env);
     if (url.pathname === "/maritime" || url.pathname.startsWith("/maritime/")) {
       return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });

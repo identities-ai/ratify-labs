@@ -32,6 +32,16 @@ test("rejects the provider hostname", async () => {
   assert.equal(response.headers.get("cache-control"), "no-store");
 });
 
+test("accepts an explicitly configured staging hostname", async () => {
+  const worker = await loadWorker("staging-host");
+  const response = await worker.fetch(
+    new Request("https://ratify-labs-staging.example/"),
+    { ASSETS: assets, LABS_HOSTNAME: "ratify-labs-staging.example" },
+    ctx,
+  );
+  assert.equal(response.status, 200);
+});
+
 test("routes only read-only Maritime paths with a server credential", async () => {
   const worker = await loadWorker("route");
   const originalFetch = globalThis.fetch;
