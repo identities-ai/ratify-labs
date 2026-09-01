@@ -20,6 +20,9 @@ const PAGES = [
   { route: "/google-adk", name: "Google ADK", endorsement: /Not a Google partnership/ },
   { route: "/langchain", name: "LangChain", endorsement: /Not a LangChain partnership/ },
   { route: "/nvidia-openshell-nooa", name: "NVIDIA OpenShell \\+ NOOA", endorsement: /Not an NVIDIA partnership/ },
+  // The only entry a reader cannot run from a package install. Its page must
+  // still carry the same not-a-hosted-lab and non-endorsement guarantees.
+  { route: "/edge-sentinel", name: "Ratify Edge Physical AI", endorsement: /not a platform partnership/ },
 ];
 
 for (const page of PAGES) {
@@ -68,4 +71,43 @@ test("the catalog links a hosted lab only for Maritime", async () => {
   for (const slug of ["github-copilot", "google-adk", "langchain"]) {
     assert.match(html, new RegExp(`ratify-protocol/tree/main/references/${slug}`));
   }
+});
+
+// The hardware reference is the first entry a reader cannot run from a package
+// install. That difference has to reach the catalog card, because a reader
+// decides whether to click from the card, not from the page.
+test("the catalog states the hardware requirement before a reader clicks", async () => {
+  const response = await get("/", "catalog-hardware");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /Ratify Edge Physical AI/);
+  assert.match(html, /Raspberry Pi/, "the card must name the hardware");
+  assert.match(html, /Arduino Uno/);
+  assert.match(html, /Not runnable in the browser/);
+
+  // It is a reference, not a lab, and the catalog must not imply otherwise.
+  const card = html.slice(html.indexOf("Ratify Edge Physical AI"));
+  const end = card.indexOf("</article>");
+  assert.doesNotMatch(card.slice(0, end), /Run the live lab/);
+});
+
+// The Arduino is the actuator and decides nothing. If the page ever implied
+// otherwise it would invert the reference's entire claim. The README states
+// this as a negation, so a bare substring search is not the test: every
+// occurrence has to be a denial, never an assertion.
+test("the edge sentinel page never implies the actuator authorizes", async () => {
+  const response = await get("/edge-sentinel", "edge-actuator");
+  const html = await response.text();
+
+  for (const match of html.matchAll(/(.{40})Arduino (?:verifies|authorizes|decides)/gi)) {
+    assert.match(
+      match[1],
+      /\bnot\b/i,
+      `an unnegated claim that the Arduino decides: ...${match[0]}`,
+    );
+  }
+
+  // And the receiver is named as the thing that decides.
+  assert.match(html, /Raspberry Pi|ARMv7|Linux/);
 });
