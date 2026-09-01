@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://labs.ratifyprotocol.com/</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://labs.ratifyprotocol.com/copilot</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://labs.ratifyprotocol.com/google-adk</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://labs.ratifyprotocol.com/langchain</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://labs.ratifyprotocol.com/nvidia-openshell-nooa</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://labs.ratifyprotocol.com/edge-sentinel</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+</urlset>

@@ -28,9 +28,21 @@ export async function generateMetadata({ params }: { params: Promise<{ reference
   const entry = lookup(reference);
   if (!entry) return {};
   const editorial = EDITORIAL[entry.slug];
+  // Social and canonical metadata has to be per page. The root layout defines
+  // openGraph and twitter objects, and a page that sets only title and
+  // description inherits those wholesale: every share of every reference read
+  // "Ratify Labs / Agents can act. Authority makes it safe.", which is the same
+  // card for six different pages.
+  const title = `${entry.displayName} — Ratify Labs`;
+  const description = editorial?.claim ?? `${entry.displayName}, an open Ratify Protocol reference.`;
+  const url = `https://labs.ratifyprotocol.com${entry.route}`;
+
   return {
-    title: `${entry.displayName} — Ratify Labs`,
-    description: editorial?.claim,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: "article", images: ["/og.jpg"] },
+    twitter: { card: "summary_large_image", title, description, images: ["/og.jpg"] },
   };
 }
 
@@ -61,7 +73,30 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
     allDiagrams.push(...diagrams);
   }
 
+  // Structured data, so an answer engine can state what this page is without
+  // inferring it from prose. TechArticle rather than SoftwareApplication: a
+  // reader does not install this, they read it and run it from a repository,
+  // and codeRepository is where the implementation actually lives.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: `${entry.displayName} — Ratify Labs`,
+    description: editorial?.claim,
+    url: `https://labs.ratifyprotocol.com${entry.route}`,
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    license: "https://www.apache.org/licenses/LICENSE-2.0",
+    codeRepository: entry.sourceHref,
+    publisher: { "@type": "Organization", name: "Ratify Protocol", url: "https://ratifyprotocol.com" },
+    about: { "@type": "Thing", name: "Delegated-authority proof verification for AI agents" },
+    ...(entry.hardware
+      ? { potentialAction: { "@type": "Action", name: "Run locally", description: editorial?.prerequisites } }
+      : {}),
+  };
+
   return <main>
+    <script type="application/ld+json" suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <header className="nav">
       <Link className="brand" href="/" aria-label="Ratify Labs home"><Image src="/ratify-logo.png" alt="" width={34} height={34} /><span>RATIFY <b>LABS</b></span></Link>
       <nav aria-label="Primary navigation"><Link href="/#references">References</Link><a href={entry.referenceHref}>Reference ↗</a><a className="source" href={entry.sourceHref}>Source ↗</a></nav>

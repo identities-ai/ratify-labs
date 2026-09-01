@@ -71,7 +71,34 @@ const references = [
 ];
 
 export default function Home() {
+  // The catalog is the entry point an answer engine is most likely to cite, so
+  // it states what the site is and what it lists rather than leaving both to be
+  // inferred from headings.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Ratify Labs",
+    url: "https://labs.ratifyprotocol.com/",
+    description: "Open reference implementations showing how a receiver verifies delegated authority before an agent acts.",
+    publisher: { "@type": "Organization", name: "Ratify Protocol", url: "https://ratifyprotocol.com" },
+    mainEntity: {
+      "@type": "ItemList",
+      name: "Reference catalog",
+      itemListElement: references.map((reference, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: reference.name,
+        description: reference.description,
+        url: reference.href.startsWith("http")
+          ? reference.href
+          : `https://labs.ratifyprotocol.com${reference.href}`,
+      })),
+    },
+  };
+
   return <main>
+    <script type="application/ld+json" suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <header className="nav">
       <Link className="brand" href="/" aria-label="Ratify Labs home"><Image src="/ratify-logo.png" alt="" width={34} height={34} /><span>RATIFY <b>LABS</b></span></Link>
       <nav aria-label="Primary navigation"><a href="#references">References</a><a href="#principles">Principles</a><a className="source" href="https://github.com/identities-ai/ratify-labs">Catalog source ↗</a></nav>

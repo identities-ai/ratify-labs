@@ -73,7 +73,10 @@ test("the catalog links a hosted lab only for Maritime", async () => {
   // reference points at a deployment, and that it is Maritime.
   // Route segments only. Asset URLs on the same host (og.jpg, the logo) are
   // not lab links, and counting them was the first version of this test.
-  const labLinks = [...html.matchAll(/https:\/\/labs\.ratifyprotocol\.com\/([a-z][a-z0-9-]*)(?![\w.])/g)]
+  // Structured data now carries a canonical URL per page, which is a third
+  // copy of the content after the markup and the hydration payload. A
+  // canonical URL is not a lab link, so scan the rendered markup only.
+  const labLinks = [...markupOnly(html).matchAll(/https:\/\/labs\.ratifyprotocol\.com\/([a-z][a-z0-9-]*)(?![\w.])/g)]
     .map((match) => match[1]);
   assert.ok(labLinks.length > 0, "expected the Maritime lab to be linked");
   assert.deepEqual([...new Set(labLinks)], ["maritime"]);
@@ -92,13 +95,14 @@ test("the catalog states the hardware requirement before a reader clicks", async
   assert.equal(response.status, 200);
   const html = await response.text();
 
-  assert.match(html, /Ratify Edge Physical AI/);
-  assert.match(html, /Raspberry Pi/, "the card must name the hardware");
-  assert.match(html, /Arduino Uno/);
-  assert.match(html, /Not runnable in the browser/);
+  const markup = markupOnly(html);
+  assert.match(markup, /Ratify Edge Physical AI/);
+  assert.match(markup, /Raspberry Pi/, "the card must name the hardware");
+  assert.match(markup, /Arduino Uno/);
+  assert.match(markup, /Not runnable in the browser/);
 
   // It is a reference, not a lab, and the catalog must not imply otherwise.
-  const card = html.slice(html.indexOf("Ratify Edge Physical AI"));
+  const card = markup.slice(markup.indexOf("Ratify Edge Physical AI"));
   const end = card.indexOf("</article>");
   assert.doesNotMatch(card.slice(0, end), /Run the live lab/);
 });
@@ -178,4 +182,55 @@ test("only Maritime is Live, and only it offers a hosted lab", async () => {
   assert.equal((markup.match(/>Live</g) ?? []).length, 1);
   assert.equal((markup.match(/>Published</g) ?? []).length, PAGES.length);
   assert.doesNotMatch(markup, />Upcoming</, "no upcoming entry is routed");
+});
+
+// Social and canonical metadata must differ per page. The root layout defines
+// openGraph and twitter objects, and a page that overrides only title and
+// description silently inherits them: six pages, one card, all reading
+// "Ratify Labs". That is how a shared link came back blank and generic.
+test("every reference page carries its own social metadata", async () => {
+  const seen = new Set();
+  for (const { route, name } of PAGES) {
+    const html = await (await get(route, `og${route}`)).text();
+
+    const ogTitle = html.match(/property="og:title" content="([^"]+)"/)?.[1];
+    assert.ok(ogTitle, `${route} has no og:title`);
+    assert.match(ogTitle, new RegExp(name), `${route}: og:title must name the reference`);
+    assert.ok(!seen.has(ogTitle), `${route}: og:title "${ogTitle}" is shared with another page`);
+    seen.add(ogTitle);
+
+    const ogDesc = html.match(/property="og:description" content="([^"]+)"/)?.[1];
+    assert.ok(ogDesc && !/Agents can act/.test(ogDesc), `${route}: og:description is still the site default`);
+
+    assert.match(html, new RegExp(`property="og:url" content="[^"]*${route}"`), `${route}: no og:url`);
+    assert.match(html, new RegExp(`rel="canonical" href="[^"]*${route}"`), `${route}: no canonical`);
+    assert.match(html, /name="twitter:card" content="summary_large_image"/);
+    assert.match(html, /(og:image|twitter:image)/, `${route}: no share image`);
+  }
+});
+
+// Structured data, so an answer engine can state what a page is rather than
+// inferring it. Parsed, not pattern-matched: invalid JSON-LD is ignored by
+// every consumer and would look identical to a passing substring check.
+test("every reference page emits valid structured data", async () => {
+  for (const { route, name } of PAGES) {
+    const html = await (await get(route, `ld${route}`)).text();
+    const raw = html.match(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/)?.[1];
+    assert.ok(raw, `${route} has no JSON-LD`);
+
+    const data = JSON.parse(raw);
+    assert.equal(data["@type"], "TechArticle");
+    assert.match(data.headline, new RegExp(name));
+    assert.match(data.url, new RegExp(route));
+    assert.match(data.codeRepository, /github\.com\/identities-ai/);
+  }
+});
+
+test("the catalog emits a parseable ItemList of every reference", async () => {
+  const html = await (await get("/", "ld-catalog")).text();
+  const raw = html.match(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/)?.[1];
+  const data = JSON.parse(raw);
+  assert.equal(data["@type"], "WebSite");
+  assert.equal(data.mainEntity["@type"], "ItemList");
+  assert.equal(data.mainEntity.itemListElement.length, PAGES.length + 1, "every card, including the lab");
 });
