@@ -29,6 +29,13 @@ export interface RouteEntry {
   referenceHref?: string;
   /** Hosted deployment. Required for, and only for, "lab". */
   labHref?: string;
+  /**
+   * The reader needs physical hardware to run this. Declared here so
+   * scripts/check-routes.mjs can require the catalog card to say so: every
+   * other reference runs from a package install, and discovering the
+   * difference after clicking is a worse experience than reading it first.
+   */
+  hardware?: boolean;
 }
 
 const PROTOCOL = "https://github.com/identities-ai/ratify-protocol";
@@ -75,5 +82,17 @@ export const ROUTES: RouteEntry[] = [
     kind: "reference",
     referenceHref: `${PROTOCOL}/blob/main/references/nvidia-nooa-openshell/README.md`,
     sourceHref: `${PROTOCOL}/tree/main/demos/nvidia-nooa-delegated-authority`,
+  },
+  {
+    route: "/edge-sentinel",
+    displayName: "Ratify Edge Physical AI",
+    // The registry title is authoritative for the display name; the route is
+    // chosen for a reader. /physical-ai-edge-sentinel would be the longest
+    // path on the site, and /copilot set the precedent for shortening.
+    slug: "physical-ai-edge-sentinel",
+    kind: "reference",
+    referenceHref: `${PROTOCOL}/blob/main/references/physical-ai-edge-sentinel/README.md`,
+    sourceHref: `${PROTOCOL}/tree/main/references/physical-ai-edge-sentinel`,
+    hardware: true,
   },
 ];

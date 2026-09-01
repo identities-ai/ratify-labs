@@ -56,4 +56,15 @@ export const EDITORIAL: Record<string, Editorial> = {
     endorsement:
       "An independent Ratify Protocol project. Not an NVIDIA partnership, NVIDIA-approved integration, or NVIDIA reference architecture.",
   },
+  "physical-ai-edge-sentinel": {
+    claim:
+      "Let an agent trigger a physical action while the decision stays on a Linux receiver the actuator cannot overrule.",
+    prerequisites:
+      "A Linux machine, a C compiler, make, and the Ratify C SDK. The deterministic gate needs no Arduino, model API, cloud account or trusted clock. The serial path additionally needs a Raspberry Pi 2 or similar ARMv7 device, an Arduino Uno and a USB cable.",
+    run: "cd references/physical-ai-edge-sentinel\nRATIFY_SDK=/path/to/ratify-c ./run-reference-check.sh",
+    evidence:
+      "25 rows pass with zero failures and zero skips, on ARMv7 hardware as well as locally. On the serial path the actuator fires exactly twice: monitor authorization, replay and every context mismatch leave it untouched.",
+    endorsement:
+      "An independent Ratify Protocol project. Experimental, and not a platform partnership, endorsed integration, or safety-certified reference architecture.",
+  },
 };

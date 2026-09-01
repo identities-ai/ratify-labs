@@ -82,5 +82,23 @@ export const GENERATED: GeneratedContent = {
       "heading": "Which path should I use?",
       "body": "**Use this open reference** to read every line of the decision path and run it\nwith no account. Apache-2.0, no runtime dependency on a hosted Ratify service.\n\n**Register interest in Ratify Verify** if you would rather not operate trust\ndistribution, revocation freshness, challenge storage, and audit retention.\nBoth verify the same proofs."
     }
+  },
+  "physical-ai-edge-sentinel": {
+    "why": {
+      "heading": "Why would a developer or enterprise need this?",
+      "body": "Robots, farm equipment, instruments, and edge devices need to decide whether an action is authorized at the point where it has consequences. Network identity and agent-framework permissions are useful controls, but they do not by themselves express which principal approved this exact action, resource, duration, and time window.\n\n| Question | Network and platform controls | Ratify authority |\n| --- | --- | --- |\n| Can this process reach the receiver? | Usually yes | Not its purpose |\n| Did a recognized principal authorize this action? | Not expressed by reachability alone | Signed delegation is checked |\n| Is the requested scope and duration within bounds? | Often application-specific | Receiver evaluates proof and local policy |\n| Can the decision be checked without a network call? | Depends on deployment | Yes, after proof presentation |\n\n```mermaid\nflowchart LR\n  I[Agent identity and network access] --> C{Receiver checks}\n  D[Signed delegation and fresh proof] --> C\n  P[Local device policy] --> C\n  C -->|allow, all checks pass| A[Bounded actuator command]\n  C -->|deny, any check fails| X[No actuator command]\n```\n\nThis matters when an agent can call a tool but must not have unlimited authority: agricultural equipment, warehouse robots, drones, laboratory instruments, charging systems, and other edge-controlled devices. Ratify complements IAM, OAuth, MCP, A2A, and local policy; it does not replace them."
+    },
+    "roles": {
+      "heading": "Who implements what",
+      "body": "| Role | What it decides or builds | This reference uses |\n| --- | --- | --- |\n| Principal | Sets the authority ceiling and signs the delegation | Ratify SDK or Ratify Verify |\n| Agent operator | Presents the proof and action request | Deterministic controller or the Google ADK adapter in `adk/` |\n| Receiver operator | Pins the trust root, local policy, and actuator mapping | Linux receiver in `edge/` |\n| Actuator operator | Connects and programs the safe output device | Arduino sketch in `arduino/` |\n| Platform vendor | No change required to its platform | Ratify is independent of an agent framework |\n\nThe Arduino is an actuator, not the authorization boundary. It does not verify proofs, hold keys, enforce local policy, or provide trusted time. Direct access to the Arduino is outside this reference's security boundary."
+    },
+    "proves": {
+      "heading": "What the reference proves",
+      "body": "The deterministic gate runs the 16-row protocol matrix and observes the protected effect:\n\n| Tested case | Decision | Actuator handler |\n| --- | --- | --- |\n| authorized actuation | authorized | invoked |\n| monitor-only request | authorized | not invoked |\n| replayed proof | invalid | not invoked |\n| expired proof | invalid | not invoked |\n| wrong scope | invalid or denied | not invoked |\n| wrong agent | invalid or denied | not invoked |\n| revoked certificate | revoked | not invoked |\n| unavailable revocation state | unavailable | not invoked |\n\nThe local gate result is **25 passed, 0 failed, 0 skipped**. The final Pi 2 ARMv7 serial integration run for this five-input context implementation also passed: two authorized invocations, monitor authorization without actuation, and replay denial. This is evidence of the receiver-to-actuator path, not a claim that the Arduino verifies authorization."
+    },
+    "path": {
+      "heading": "Which path should I use?",
+      "body": "Use this open reference when you need inspectable source, a deterministic local gate, and a safe demonstration of the verification boundary. Use [Ratify Verify](https://ratifyprotocol.com) when you need managed trust configuration, revocation operations, audit retention, observability, availability, and supported deployment adapters."
+    }
   }
 };
