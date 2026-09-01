@@ -241,3 +241,26 @@ test("the catalog emits a parseable ItemList of every reference", async () => {
   assert.equal(data.mainEntity["@type"], "ItemList");
   assert.equal(data.mainEntity.itemListElement.length, PAGES.length + 1, "every card, including the lab");
 });
+
+// A reader arriving from a shared link should not have to leave the page to
+// find out what Ratify Protocol is. Every reference page assumed they knew.
+test("every reference page says what the protocol is and links to it", async () => {
+  for (const { route } of PAGES) {
+    const html = markupOnly(await (await get(route, `proto${route}`)).text());
+    assert.match(html, /open protocol for proving delegated\s+authority/,
+      `${route}: no explanation of what Ratify Protocol is`);
+    assert.match(html, /href="https:\/\/ratifyprotocol\.com"/,
+      `${route}: no link to the protocol site`);
+  }
+});
+
+// The physical reference drives a real agent framework, and the question a
+// reader has is what the model is trusted with. That answer lives in the
+// canonical README and has to reach the page.
+test("the edge sentinel page explains where the framework and model sit", async () => {
+  const html = markupOnly(await (await get("/edge-sentinel", "edge-adk")).text());
+  assert.match(html, /Google ADK/, "the page must name the framework it uses");
+  assert.match(html, /model/i, "the page must say where the model sits");
+  assert.match(html, /not a security boundary/i,
+    "the page must state that the model is not the boundary");
+});

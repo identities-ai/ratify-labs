@@ -49,7 +49,9 @@ export async function generateMetadata({ params }: { params: Promise<{ reference
   };
 }
 
-const ORDER = ["why", "roles", "proves", "path"] as const;
+// Architecture before roles, and the framework path before the commercial
+// choice, so a reader learns what happens before who builds it.
+const ORDER = ["why", "does", "roles", "proves", "framework", "path"] as const;
 
 export default async function ReferencePage({ params }: { params: Promise<{ reference: string }> }) {
   const { reference } = await params;
@@ -117,6 +119,13 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
         instructions are open and it runs on your machine in minutes. Nothing on
         this page executes here, and no integration is hosted for you.
       </div>
+      <p className="protocol-note">
+        <strong>Ratify Protocol</strong> is an open protocol for proving delegated
+        authority: a principal signs a bounded delegation naming what an agent may
+        do, and any receiver can verify that proof offline, before acting, without
+        calling the issuer. This page is one open reference implementation of it. 
+        <a href="https://ratifyprotocol.com">What Ratify Protocol is ↗</a>
+      </p>
       <p className="endorsement">{editorial?.endorsement}</p>
     </section>
 
