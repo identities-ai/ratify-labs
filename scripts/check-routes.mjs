@@ -89,6 +89,14 @@ for (const entry of entries) {
   const hasReference = /referenceHref:/.test(rest);
   const hasSource = /sourceHref:/.test(rest);
 
+  // A generated page nothing links to is dead weight that still has to be
+  // maintained and can still go stale. Every routed reference must be reachable
+  // from the catalog, and the catalog must reach it by its route rather than by
+  // sending the reader to the source and skipping the page entirely.
+  if (kind === "reference" && !new RegExp(`href: "${route}"`).test(catalog)) {
+    failures.push(`${route}: no catalog card links to it, so the generated page is orphaned`);
+  }
+
   if (/hardware:\s*true/.test(rest) && !catalogRequiresHardware(displayName)) {
     failures.push(`${route}: declares hardware, so its catalog card must carry a requires: line naming it`);
   }

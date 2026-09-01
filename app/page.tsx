@@ -1,5 +1,10 @@
 const REPO = "https://github.com/identities-ai/ratify-protocol";
 
+// A published reference card links to its page on this site, and offers the
+// canonical source as the second link. Linking the card straight to GitHub left
+// every generated page unreachable: they rendered, they were tested, and nothing
+// pointed at them. scripts/check-routes.mjs now refuses that state.
+
 // Three states, because there are three real situations and collapsing them
 // misleads. `live` is a lab hosted here that a visitor can run in the browser.
 // `published` is merged, open source they run themselves; the link goes to the
@@ -18,7 +23,7 @@ const references = [
     name: "GitHub Copilot",
     status: "Published",
     description: "Copilot calls a deployment tool over MCP. An independently operated receiver verifies that a recognized principal authorized this exact action, on this exact resource, before the protected handler runs.",
-    href: `${REPO}/blob/main/references/github-copilot/README.md`,
+    href: "/copilot",
     sourceHref: `${REPO}/tree/main/references/github-copilot`,
     action: "Read the reference",
     published: true,
@@ -27,7 +32,7 @@ const references = [
     name: "LangChain",
     status: "Published",
     description: "A LangChain agent crosses an MCP boundary. The receiver verifies who authorized the exact action and which bounds still apply, without the model ever holding the signing key.",
-    href: `${REPO}/blob/main/references/langchain/README.md`,
+    href: "/langchain",
     sourceHref: `${REPO}/tree/main/references/langchain`,
     action: "Read the reference",
     published: true,
@@ -36,7 +41,7 @@ const references = [
     name: "Google ADK",
     status: "Published",
     description: "An ADK agent requests cloud provisioning. An independent MCP receiver verifies the signed ceiling and the named resource before anything is created.",
-    href: `${REPO}/blob/main/references/google-adk/README.md`,
+    href: "/google-adk",
     sourceHref: `${REPO}/tree/main/references/google-adk`,
     action: "Read the reference",
     published: true,
@@ -45,7 +50,7 @@ const references = [
     name: "NVIDIA OpenShell + NOOA",
     status: "Published",
     description: "An agent at one company asks another company's service to move money. The receiver verifies the signed ceiling, the named order, and the expiry before it acts.",
-    href: `${REPO}/blob/main/references/nvidia-nooa-openshell/README.md`,
+    href: "/nvidia-openshell-nooa",
     sourceHref: `${REPO}/tree/main/demos/nvidia-nooa-delegated-authority`,
     action: "Read the reference",
     published: true,

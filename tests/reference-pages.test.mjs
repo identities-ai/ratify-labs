@@ -15,6 +15,17 @@ async function get(path, label) {
   return worker.fetch(new Request(`http://localhost${path}`), { ASSETS: assets }, ctx);
 }
 
+
+/**
+ * The server HTML carries the rendered markup and the RSC hydration payload,
+ * so every string appears twice. Counting without stripping the payload
+ * silently doubles every total, which is how a "there is exactly one" test
+ * quietly becomes "there are exactly two".
+ */
+function markupOnly(html) {
+  return html.replace(/<script[\s\S]*?<\/script>/g, "");
+}
+
 const PAGES = [
   { route: "/copilot", name: "GitHub Copilot", endorsement: /Not a GitHub- or Microsoft-endorsed/ },
   { route: "/google-adk", name: "Google ADK", endorsement: /Not a Google partnership/ },
@@ -110,4 +121,61 @@ test("the edge sentinel page never implies the actuator authorizes", async () =>
 
   // And the receiver is named as the thing that decides.
   assert.match(html, /Raspberry Pi|ARMv7|Linux/);
+});
+
+// One discoverability model for the whole catalog. Before this, every card
+// linked straight to GitHub and the generated pages were unreachable: they
+// rendered, they were tested, and nothing pointed at them.
+test("every published reference is reachable from the catalog", async () => {
+  const response = await get("/", "catalog-links");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  for (const { route } of PAGES) {
+    assert.match(
+      html,
+      new RegExp(`href="${route}"`),
+      `the catalog must link ${route}, or its generated page is orphaned`,
+    );
+  }
+});
+
+test("every card also offers the canonical source", async () => {
+  const html = await (await get("/", "catalog-source")).text();
+  const sources = markupOnly(html).match(/View implementation source/g) ?? [];
+  assert.equal(
+    sources.length,
+    PAGES.length + 1,
+    "each reference card, plus the Maritime lab, keeps a link to its source",
+  );
+});
+
+test("every generated page links back to its canonical source", async () => {
+  for (const { route } of PAGES) {
+    const html = await (await get(route, `src${route}`)).text();
+    assert.match(
+      html,
+      /github\.com\/identities-ai\/ratify-protocol/,
+      `${route} must point back at the canonical implementation`,
+    );
+  }
+});
+
+// The hardware notice is a fact about one reference, not decoration. If it
+// appeared on the others it would be false.
+test("hardware prerequisites appear on exactly one card", async () => {
+  const html = await (await get("/", "catalog-hw-once")).text();
+  const markup = markupOnly(html);
+  assert.equal((markup.match(/Needs hardware:/g) ?? []).length, 1);
+  assert.equal((markup.match(/Not runnable in the browser/g) ?? []).length, 1);
+});
+
+// Live, Published and Upcoming must keep meaning what they meant.
+test("only Maritime is Live, and only it offers a hosted lab", async () => {
+  const html = await (await get("/", "catalog-kinds")).text();
+  const markup = markupOnly(html);
+  assert.equal((markup.match(/Run the live lab/g) ?? []).length, 1);
+  assert.equal((markup.match(/>Live</g) ?? []).length, 1);
+  assert.equal((markup.match(/>Published</g) ?? []).length, PAGES.length);
+  assert.doesNotMatch(markup, />Upcoming</, "no upcoming entry is routed");
 });
