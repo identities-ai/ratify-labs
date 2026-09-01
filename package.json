@@ -7,14 +7,15 @@
   },
   "scripts": {
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
-    "build": "npm run generate:seo && WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
+    "build": "npm run generate:seo && npm run generate:og && WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run check:routes && npm run build && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "check:routes": "node scripts/check-routes.mjs",
     "generate:pages": "node scripts/generate-reference-pages.mjs",
-    "generate:seo": "node scripts/generate-seo-assets.mjs"
+    "generate:seo": "node scripts/generate-seo-assets.mjs",
+    "generate:og": "node scripts/generate-og-images.mjs"
   },
   "dependencies": {
     "marked": "18.0.11",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "16.4.0",
     "react-server-dom-webpack": "19.2.8",
+    "sharp": "0.35.2",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.3",

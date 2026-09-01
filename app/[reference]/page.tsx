@@ -36,13 +36,16 @@ export async function generateMetadata({ params }: { params: Promise<{ reference
   const title = `${entry.displayName} — Ratify Labs`;
   const description = editorial?.claim ?? `${entry.displayName}, an open Ratify Protocol reference.`;
   const url = `https://labs.ratifyprotocol.com${entry.route}`;
+  // Generated per reference by scripts/generate-og-images.mjs. The catalog keeps
+  // the designed public/og.jpg; these are the cards the references never had.
+  const image = `/og/${entry.slug}.jpg`;
 
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, type: "article", images: ["/og.jpg"] },
-    twitter: { card: "summary_large_image", title, description, images: ["/og.jpg"] },
+    openGraph: { title, description, url, type: "article", images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
