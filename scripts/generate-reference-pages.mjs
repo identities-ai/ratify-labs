@@ -21,10 +21,16 @@ const local = process.env.RATIFY_PROTOCOL_PATH;
 // Heading text varies between references; the section does not. Matched by
 // intent rather than by exact string, because normalising four READMEs to one
 // wording would cost more than it returns.
+// `optional` sections appear on the references that have them and are absent
+// elsewhere without failing the build. Every reference answers why, who, what it
+// proves and which path; only some describe an architecture or an agent
+// framework, and requiring those of all five would force filler.
 const SECTIONS = [
   { id: "why", match: /^##\s+.*\b(why)\b.*$/i },
   { id: "roles", match: /^##\s+Who implements what\s*$/i },
+  { id: "does", match: /^##\s+What does this reference do\?\s*$/i, optional: true },
   { id: "proves", match: /^##\s+.*\bproves\b.*$/i },
+  { id: "framework", match: /^##\s+Run through .*$/i, optional: true },
   { id: "path", match: /^##\s+Which path should I use\?\s*$/i },
 ];
 
@@ -66,9 +72,12 @@ const problems = [];
 for (const slug of slugs) {
   const markdown = await readme(slug);
   const found = {};
-  for (const { id, match } of SECTIONS) {
+  for (const { id, match, optional } of SECTIONS) {
     const part = section(markdown, match);
-    if (!part) { problems.push(`${slug}: no section matching ${id}`); continue; }
+    if (!part) {
+      if (!optional) problems.push(`${slug}: no section matching ${id}`);
+      continue;
+    }
     found[id] = part;
   }
   generated[slug] = found;

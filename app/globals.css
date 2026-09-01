@@ -12,6 +12,18 @@
   opacity: .82;
 }
 
+/* One paragraph naming the protocol, on every reference page. A reader arriving
+   from a shared link should not have to leave to find out what this is. */
+.protocol-note {
+  margin: 1.1rem 0 .5rem;
+  padding: .85rem 1rem;
+  border-left: 3px solid var(--blue);
+  background: #f2f6ff;
+  font-size: .93rem;
+  line-height: 1.6;
+}
+.protocol-note a { color: var(--blue); font-weight: 650; white-space: nowrap; }
+
 .catalog-note{max-width:760px;margin:28px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
 .footer-links{display:flex;gap:18px;justify-content:flex-end}
 .card-links{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.card-links a:last-child{font-size:12px;color:#aebbd1}
