@@ -14,7 +14,7 @@
 // repository, and a GitHub outage would fail a build that has nothing to do with
 // GitHub. Refresh the pin deliberately with scripts/sync-protocol-registry.mjs.
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 
 const snapshot = JSON.parse(
   readFileSync(new URL("../app/lib/protocol-registry.snapshot.json", import.meta.url), "utf8"),
@@ -88,6 +88,16 @@ for (const entry of entries) {
   const hasLab = /labHref:/.test(rest);
   const hasReference = /referenceHref:/.test(rest);
   const hasSource = /sourceHref:/.test(rest);
+
+  // A share card per reference, and not an empty file: a generator that writes
+  // a zero-length image fails silently everywhere except a social preview,
+  // which is exactly how the missing per-page cards were found.
+  if (kind === "reference") {
+    const image = new URL(`../public/og/${slug}.jpg`, import.meta.url);
+    if (!existsSync(image) || statSync(image).size < 10_000) {
+      failures.push(`${route}: public/og/${slug}.jpg is missing or too small to be a rendered card`);
+    }
+  }
 
   // A generated page nothing links to is dead weight that still has to be
   // maintained and can still go stale. Every routed reference must be reachable
