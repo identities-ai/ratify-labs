@@ -40,6 +40,34 @@ const entries = [...source.matchAll(
   /\{\s*route:\s*"([^"]+)",\s*displayName:\s*"([^"]+)",(?:[\s\S]*?)slug:\s*"([^"]+)",\s*kind:\s*"([^"]+)"([\s\S]*?)\n {2}\},/g,
 )].map(([, route, displayName, slug, kind, rest]) => ({ route, displayName, slug, kind, rest }));
 
+const catalog = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+/**
+ * A reference needing hardware must say so on the catalog card, not only on
+ * its page. Every other entry runs from a package install, so the difference
+ * has to be visible before a reader clicks rather than after.
+ */
+function catalogRequiresHardware(displayName) {
+  const card = catalog.slice(catalog.indexOf(`name: "${displayName}"`));
+  const end = card.indexOf("},");
+  if (end === -1) return false;
+  const body = card.slice(0, end);
+  return /requires:\s*"[^"]*\bhardware\b[^"]*"/i.test(body);
+}
+
+// An entry the pattern above cannot parse is not validated, and nothing said
+// so: the count printed at the end came from the parsed list, so a malformed
+// entry made the registry look smaller rather than failing. Comparing against
+// a count taken independently of the pattern turns that into an error.
+const declared = (source.match(/^\s{4}route:\s*"/gm) ?? []).length;
+if (entries.length !== declared) {
+  console.error(
+    `route-registry: parsed ${entries.length} entries but ${declared} are declared. ` +
+    "An entry the parser cannot read is an entry nothing checks.",
+  );
+  process.exit(1);
+}
+
 const failures = [];
 const seenRoutes = new Set();
 const seenSlugs = new Set();
@@ -60,6 +88,18 @@ for (const entry of entries) {
   const hasLab = /labHref:/.test(rest);
   const hasReference = /referenceHref:/.test(rest);
   const hasSource = /sourceHref:/.test(rest);
+
+  // A generated page nothing links to is dead weight that still has to be
+  // maintained and can still go stale. Every routed reference must be reachable
+  // from the catalog, and the catalog must reach it by its route rather than by
+  // sending the reader to the source and skipping the page entirely.
+  if (kind === "reference" && !new RegExp(`href: "${route}"`).test(catalog)) {
+    failures.push(`${route}: no catalog card links to it, so the generated page is orphaned`);
+  }
+
+  if (/hardware:\s*true/.test(rest) && !catalogRequiresHardware(displayName)) {
+    failures.push(`${route}: declares hardware, so its catalog card must carry a requires: line naming it`);
+  }
 
   if (kind === "lab" && !hasLab) failures.push(`${route}: kind "lab" needs labHref`);
   if (kind !== "lab" && hasLab) failures.push(`${route}: only a lab may carry labHref`);
