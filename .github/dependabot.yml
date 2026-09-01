@@ -1,0 +1,19 @@
+# Keep workflow actions current.
+#
+# Added after every action in this repository pinned a major that GitHub had
+# already moved past: checkout and setup-node were still on v4, whose Node 20
+# runtime is deprecated, and the runner had begun forcing them onto Node 24 and
+# warning on every run. Nothing was watching for that, so it surfaced as a
+# warning nobody owned rather than a pull request someone could merge.
+#
+# Actions only. The npm tree is deliberately not included here: it moves far
+# more often, and a flood of dependency pull requests is how a repository learns
+# to ignore them.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
