@@ -190,6 +190,7 @@ test("only Maritime is Live, and only it offers a hosted lab", async () => {
 // "Ratify Labs". That is how a shared link came back blank and generic.
 test("every reference page carries its own social metadata", async () => {
   const seen = new Set();
+  const seenImages = new Set();
   for (const { route, name } of PAGES) {
     const html = await (await get(route, `og${route}`)).text();
 
@@ -205,7 +206,13 @@ test("every reference page carries its own social metadata", async () => {
     assert.match(html, new RegExp(`property="og:url" content="[^"]*${route}"`), `${route}: no og:url`);
     assert.match(html, new RegExp(`rel="canonical" href="[^"]*${route}"`), `${route}: no canonical`);
     assert.match(html, /name="twitter:card" content="summary_large_image"/);
-    assert.match(html, /(og:image|twitter:image)/, `${route}: no share image`);
+    // Each reference has its own card. Sharing five different pages that all
+    // showed the catalog image is what started this.
+    const image = html.match(/property="og:image" content="([^"]+)"/)?.[1];
+    assert.ok(image, `${route}: no og:image`);
+    assert.match(image, /\/og\/[a-z0-9-]+\.jpg$/, `${route}: og:image is not a per-reference card`);
+    assert.ok(!seenImages.has(image), `${route}: shares its card with another page`);
+    seenImages.add(image);
   }
 });
 
