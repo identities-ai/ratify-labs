@@ -40,7 +40,7 @@ const references = [
   {
     name: "Google ADK",
     status: "Published",
-    description: "An ADK agent requests cloud provisioning. An independent MCP receiver verifies the signed ceiling and the named resource before anything is created.",
+    description: "A three-agent ADK handoff crosses separately anchored trust domains. An independent MCP receiver verifies the signed route, ceiling, resource, freshness, and admission before anything is created.",
     href: "/google-adk",
     sourceHref: `${REPO}/tree/main/references/google-adk`,
     action: "Read the reference",
