@@ -16,6 +16,8 @@ export interface Editorial {
   evidence: string;
   /** Stated on every page, in the reference's own words. */
   endorsement: string;
+  /** Optional reader-facing briefing artifact owned by the canonical reference. */
+  briefHref?: string;
 }
 
 export const EDITORIAL: Record<string, Editorial> = {
@@ -30,10 +32,13 @@ export const EDITORIAL: Record<string, Editorial> = {
   },
   "google-adk": {
     claim:
-      "Let a Google ADK agent request cloud provisioning while the receiver checks the signed ceiling before anything is created.",
+      "See a Google ADK multi-agent handoff cross separately anchored trust domains while an independent receiver enforces the exact signed action before anything is created.",
     prerequisites: "Python 3.12. No Google Cloud project, model key, or paid service.",
     run: "./scripts/google-adk-reference-check.sh",
-    evidence: "33 tests pass, zero skipped, and the gate fails on any skip.",
+    evidence:
+      "49 deterministic tests pass with zero skipped or failed cases. The dual-root exact-call harness measures 10, 100, 1,000, and 1,000,000 calls; its recorded million-call tier completed with 900,000 allows and 100,000 constraint denials at 369.693 receiver decisions per second.",
+    briefHref:
+      "https://github.com/identities-ai/ratify-protocol/blob/main/references/google-adk/evidence/google-adk-federation-scale-brief.pdf",
     endorsement:
       "An independent draft reference implementation. Not a Google partnership, Google-approved integration, or Google reference architecture.",
   },
