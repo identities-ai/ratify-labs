@@ -1,12 +1,12 @@
 # Ratify Labs deployment evidence
 
-Date: 2026-08-24
+Date: 2026-09-17
 
 ## Catalog
 
 - Public repository: `https://github.com/identities-ai/ratify-labs`
-- Deployed catalog revision: `ff787dd8639062aa81f2285799a06332bb095025`
-- Hosting version: 7
+- Deployed catalog revision: `c845b49`
+- Cloudflare Worker: `ratify-labs`
 - Public root: `https://labs.ratifyprotocol.com/`
 - Custom-domain, provider, and TLS states: active
 - Catalog provider document route: HTTP 404
@@ -53,10 +53,10 @@ referrer-policy headers. Both favicons and the Maritime-specific social card
 return HTTP 200. The catalog and Maritime provider document routes return HTTP
 404, as do the unregistered static-directory and image-optimizer paths.
 
-The Sites hosting layer also serves byte-identical public static assets from
-its provider hostnames before application routing. Those assets contain no
-credentials, proof material, private identifiers, or execution capability.
-Provider-host document and execution routes remain closed.
+Cloudflare serves the public static assets from the Worker before application
+routing. Those assets contain no credentials, proof material, private
+identifiers, or execution capability. The Worker subdomain remains closed by
+the application host allowlist.
 
 The catalog routes only the registered Maritime read path. It strips browser
 cookies, authorization, and any caller-supplied route credential, supplies its

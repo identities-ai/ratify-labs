@@ -119,24 +119,21 @@ linting, which is how three lint errors reached `main`.
 
 ## Deployment
 
-**This repository does not deploy itself.** Publishing is a manual step on the
-hosting platform, and that is a known gap rather than a design: changes can merge
-here and not reach the public site. Four catalog routes are in `main` and absent
-from production for that reason.
+The production catalog is a Cloudflare Worker named `ratify-labs`. Build and
+publish the Worker from a clean checkout with Wrangler; GitHub pushes do not
+deploy automatically.
 
-A deploy job was written and removed before merging. It would have published a
-Cloudflare Worker while the domain still resolves elsewhere, then confirmed the
-untouched production site was serving and reported success: a green check for a
-deploy that changed nothing.
+```bash
+npm ci
+npm run build
+npx wrangler deploy --config dist/server/wrangler.json --keep-vars
+```
 
-Two documents cover the fix. [`docs/SITES-SESSION-RUNBOOK.md`](docs/SITES-SESSION-RUNBOOK.md)
-is the immediate step, publishing what is already merged and capturing the
-deployed artifact. [`docs/HOSTING-MIGRATION-SCOPE.md`](docs/HOSTING-MIGRATION-SCOPE.md)
-scopes moving hosting so that deployment can be automated, including the failure
-modes that make it more delicate than it looks.
+The Worker requires the existing `LABS_ROUTER_TOKEN` secret for the Maritime
+route. Keep that value in Cloudflare and never commit it.
 
 Read [`docs/PRODUCT-REQUIREMENTS.md`](docs/PRODUCT-REQUIREMENTS.md) before
 adding a catalog entry or route.
 
-See [`docs/PRIVACY.md`](docs/PRIVACY.md) for the application boundary and the
-hosting layer's necessary abuse-prevention cookie.
+See [`docs/PRIVACY.md`](docs/PRIVACY.md) for the application boundary and
+Cloudflare's necessary abuse-prevention cookie.
