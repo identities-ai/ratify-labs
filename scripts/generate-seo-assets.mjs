@@ -17,7 +17,10 @@ if (routes.length === 0) {
 
 const today = new Date().toISOString().slice(0, 10);
 const urls = ["/", ...routes]
-  .map((route) => `  <url>\n    <loc>${ORIGIN}${route}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`)
+  .map((route) => {
+    const canonicalRoute = route === "/maritime" || route === "/classifier-dev" ? `${route}/` : route;
+    return `  <url>\n    <loc>${ORIGIN}${canonicalRoute}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`;
+  })
   .join("\n");
 
 writeFileSync(
