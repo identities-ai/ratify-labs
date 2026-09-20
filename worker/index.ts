@@ -36,9 +36,20 @@ function isMaritimePublicPath(pathname: string): boolean {
 function isClassifierPublicPath(pathname: string): boolean {
   return pathname === "/classifier-dev" ||
     pathname === "/classifier-dev/" ||
+    pathname === "/classifier-dev/ratify-logo.png" ||
     pathname === "/classifier-dev/favicon.svg" ||
     pathname === "/classifier-dev/api/run" ||
     (pathname.startsWith("/classifier-dev/assets/") && pathname.length > "/classifier-dev/assets/".length);
+}
+
+function classifierError(error: string, status: number): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: securityHeaders(new Headers({
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json; charset=utf-8",
+    })),
+  });
 }
 
 function securityHeaders(headers = new Headers()): Headers {
@@ -98,7 +109,7 @@ async function routeClassifier(request: Request, env: Env): Promise<Response> {
     return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: isApi ? "POST" : "GET, HEAD", "Cache-Control": "no-store" })) });
   }
   if (!env.CLASSIFIER_ORIGIN || !env.LABS_ROUTER_TOKEN || env.LABS_ROUTER_TOKEN.length < 32) {
-    return new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    return isApi ? classifierError("reference_unavailable", 503) : new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
   }
   const target = new URL(source.pathname + source.search, env.CLASSIFIER_ORIGIN);
   const headers = new Headers();
@@ -116,14 +127,14 @@ async function routeClassifier(request: Request, env: Env): Promise<Response> {
       signal: AbortSignal.timeout(10_000),
     }));
     if (!((upstream.status >= 200 && upstream.status < 300) || upstream.status === 304)) {
-      return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+      return isApi ? classifierError("reference_unavailable", 502) : new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     }
     const responseHeaders = securityHeaders(new Headers(upstream.headers));
     responseHeaders.delete("Set-Cookie");
     responseHeaders.set("X-Ratify-Labs-Reference", "classifier-dev");
     return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
   } catch {
-    return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    return isApi ? classifierError("reference_unavailable", 502) : new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
   }
 }
 
