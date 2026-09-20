@@ -110,7 +110,7 @@ export default function Home() {
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <header className="nav">
       <Link className="brand" href="/" aria-label="Ratify Labs home"><Image src="/ratify-logo.png" alt="" width={34} height={34} /><span>RATIFY <b>LABS</b></span></Link>
-      <nav aria-label="Primary navigation"><a href="#references">References</a><a href="#principles">Principles</a><a className="source" href="https://github.com/identities-ai/ratify-labs">Catalog source ↗</a></nav>
+      <nav aria-label="Primary navigation"><a href="#references">References</a><a href="#principles">Principles</a><a className="source" href="https://github.com/identities-ai/ratify-labs" target="_blank" rel="noreferrer">Catalog source ↗</a></nav>
     </header>
 
     <section className="hero">
@@ -137,7 +137,7 @@ export default function Home() {
           {reference.live && <div className="mini-flow" aria-hidden="true"><span>AGENT</span><b>→</b><span>PROOF</span><b>→</b><span>VERIFY</span><b>→</b><span>ACT</span></div>}
           <h3>{reference.name}</h3><p>{reference.description}</p>
           {reference.requires && <p className="requires">{reference.requires}</p>}
-          {reference.href ? <div className="card-links"><a href={reference.href}>{reference.action} <span>→</span></a><a href={reference.sourceHref}>View implementation source</a></div> : <span className="unavailable">In development</span>}
+          {reference.href ? <div className="card-links"><a href={reference.href} target="_blank" rel="noreferrer">{reference.action} <span>→</span></a><a href={reference.sourceHref} target="_blank" rel="noreferrer">View implementation source</a></div> : <span className="unavailable">In development</span>}
         </article>)}
       </div>
       <p className="catalog-note">Ratify Labs publishes open reference implementations, not the Ratify Verify product. A listed platform is implementation context, not an endorsement or partnership claim.</p>
@@ -152,7 +152,7 @@ export default function Home() {
       </ol>
     </section>
 
-    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><div className="footer-links"><a href="https://github.com/identities-ai/ratify-labs">Catalog source ↗</a><a href="https://github.com/identities-ai/ratify-labs/blob/main/docs/PRIVACY.md">Privacy ↗</a><a href="https://ratifyprotocol.com">Ratify Protocol ↗</a></div></footer>
+    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><div className="footer-links"><a href="https://github.com/identities-ai/ratify-labs" target="_blank" rel="noreferrer">Catalog source ↗</a><a href="https://github.com/identities-ai/ratify-labs/blob/main/docs/PRIVACY.md" target="_blank" rel="noreferrer">Privacy ↗</a><a href="https://ratifyprotocol.com" target="_blank" rel="noreferrer">Ratify Protocol ↗</a></div></footer>
   </main>;
 }
 import Image from "next/image";

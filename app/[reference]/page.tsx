@@ -104,7 +104,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <header className="nav">
       <Link className="brand" href="/" aria-label="Ratify Labs home"><Image src="/ratify-logo.png" alt="" width={34} height={34} /><span>RATIFY <b>LABS</b></span></Link>
-      <nav aria-label="Primary navigation"><Link href="/#references">References</Link><a href={entry.referenceHref}>Reference ↗</a><a className="source" href={entry.sourceHref}>Source ↗</a></nav>
+      <nav aria-label="Primary navigation"><Link href="/#references">References</Link><a href={entry.referenceHref} target="_blank" rel="noreferrer">Reference ↗</a><a className="source" href={entry.sourceHref} target="_blank" rel="noreferrer">Source ↗</a></nav>
     </header>
 
     <section className="ref-hero">
@@ -124,7 +124,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
         authority: a principal signs a bounded delegation naming what an agent may
         do, and any receiver can verify that proof offline, before acting, without
         calling the issuer. This page is one open reference implementation of it. 
-        <a href="https://ratifyprotocol.com">What Ratify Protocol is ↗</a>
+        <a href="https://ratifyprotocol.com" target="_blank" rel="noreferrer">What Ratify Protocol is ↗</a>
       </p>
       <p className="endorsement">{editorial?.endorsement}</p>
     </section>
@@ -142,7 +142,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
       <article className="ref-section" id="run">
         <h2>Run it yourself</h2>
         <p className="prereq"><strong>Before you start:</strong> {editorial?.prerequisites}</p>
-        <p>Clone <a href="https://github.com/identities-ai/ratify-protocol">ratify-protocol</a>, then from the repository root:</p>
+        <p>Clone <a href="https://github.com/identities-ai/ratify-protocol" target="_blank" rel="noreferrer">ratify-protocol</a>, then from the repository root:</p>
         <pre><code>{editorial?.run}</code></pre>
         <p className="evidence">{editorial?.evidence}</p>
       </article>
@@ -156,12 +156,12 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
         <h2>Read the reference, or watch verification run.</h2>
       </div>
       <div className="ref-next-links">
-        <a className="primary" href={entry.referenceHref}>Read the full reference <span>↗</span></a>
-        {editorial?.briefHref && <a href={editorial.briefHref}>Download the federation and scale brief <span>↗</span></a>}
+        <a className="primary" href={entry.referenceHref} target="_blank" rel="noreferrer">Read the full reference <span>↗</span></a>
+        {editorial?.briefHref && <a href={editorial.briefHref} target="_blank" rel="noreferrer">Download the federation and scale brief <span>↗</span></a>}
         <Link href="/maritime">See a hosted lab: Maritime <span>→</span></Link>
       </div>
     </section>
 
-    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><div className="footer-links"><a href="https://github.com/identities-ai/ratify-labs">Catalog source ↗</a><a href="https://ratifyprotocol.com">Ratify Protocol ↗</a></div></footer>
+    <footer><div className="brand"><Image src="/ratify-logo.png" alt="" width={27} height={27} /><span>RATIFY <b>LABS</b></span></div><p>Open references for authority-aware agents.</p><div className="footer-links"><a href="https://github.com/identities-ai/ratify-labs" target="_blank" rel="noreferrer">Catalog source ↗</a><a href="https://ratifyprotocol.com" target="_blank" rel="noreferrer">Ratify Protocol ↗</a></div></footer>
   </main>;
 }
