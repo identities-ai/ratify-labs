@@ -24,7 +24,7 @@ const references = [
     status: "Live",
     description: "Independent reference: classifier.dev turns a support ticket into an action; Ratify stops the agent when its proposed customer, operation, path, or one-time call exceeds the signed mandate.",
     href: "https://labs.ratifyprotocol.com/classifier-dev",
-    sourceHref: "https://github.com/identities-ai/ratify-classifier-dev-reference",
+    sourceHref: "https://github.com/identities-ai/ratify-classifier-reference",
     action: "Run the live lab",
     live: true,
   },
