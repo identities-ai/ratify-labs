@@ -68,7 +68,8 @@
 @media(max-width:760px){.ref-hero,.ref-section,.ref-next{padding-left:20px;padding-right:20px}}
 .diagram-pending{font:12px var(--font-mono);color:#8995aa;border:1px dashed var(--line);border-radius:8px;padding:14px;margin:0}
 
-/* Keep the Labs shell present while the page moves underneath it. */
+/* Keep the Labs home and every shared reference page on the same shell while
+   the page moves underneath it. */
 .nav {
   position: fixed;
   top: 0;
