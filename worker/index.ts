@@ -10,6 +10,7 @@ interface Env {
   IMAGES: { input(stream: ReadableStream): { transform(options: Record<string, unknown>): { output(options: { format: string; quality: number }): Promise<{ response(): Response }> } } };
   LABS_ROUTER_TOKEN: string;
   MARITIME_ORIGIN: string;
+  CLASSIFIER_ORIGIN: string;
   LABS_HOSTNAME?: string;
 }
 
@@ -30,6 +31,14 @@ function isMaritimePublicPath(pathname: string): boolean {
     pathname === "/maritime/og.jpg" ||
     pathname === "/maritime/favicon.svg" ||
     (pathname.startsWith("/maritime/_next/static/") && pathname.length > "/maritime/_next/static/".length);
+}
+
+function isClassifierPublicPath(pathname: string): boolean {
+  return pathname === "/classifier-dev" ||
+    pathname === "/classifier-dev/" ||
+    pathname === "/classifier-dev/favicon.svg" ||
+    pathname === "/classifier-dev/api/run" ||
+    (pathname.startsWith("/classifier-dev/assets/") && pathname.length > "/classifier-dev/assets/".length);
 }
 
 function securityHeaders(headers = new Headers()): Headers {
@@ -76,12 +85,58 @@ async function routeMaritime(request: Request, env: Env): Promise<Response> {
   }
 }
 
+async function routeClassifier(request: Request, env: Env): Promise<Response> {
+  const source = new URL(request.url);
+  const isApi = source.pathname === "/classifier-dev/api/run";
+  if (source.pathname === "/classifier-dev" && (request.method === "GET" || request.method === "HEAD")) {
+    return new Response(null, {
+      status: 308,
+      headers: securityHeaders(new Headers({ Location: `/classifier-dev/${source.search}`, "Cache-Control": "no-store" })),
+    });
+  }
+  if (isApi ? request.method !== "POST" : request.method !== "GET" && request.method !== "HEAD") {
+    return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: isApi ? "POST" : "GET, HEAD", "Cache-Control": "no-store" })) });
+  }
+  if (!env.CLASSIFIER_ORIGIN || !env.LABS_ROUTER_TOKEN || env.LABS_ROUTER_TOKEN.length < 32) {
+    return new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+  }
+  const target = new URL(source.pathname + source.search, env.CLASSIFIER_ORIGIN);
+  const headers = new Headers();
+  for (const name of ["Accept", "Accept-Language", "Content-Type", "Content-Length", "If-None-Match", "Range"]) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  headers.set(ROUTE_HEADER, `Bearer ${env.LABS_ROUTER_TOKEN}`);
+  try {
+    const upstream = await fetch(new Request(target, {
+      method: request.method,
+      headers,
+      body: request.method === "POST" ? request.body : undefined,
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
+    }));
+    if (!((upstream.status >= 200 && upstream.status < 300) || upstream.status === 304)) {
+      return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    }
+    const responseHeaders = securityHeaders(new Headers(upstream.headers));
+    responseHeaders.delete("Set-Cookie");
+    responseHeaders.set("X-Ratify-Labs-Reference", "classifier-dev");
+    return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
+  } catch {
+    return new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+  }
+}
+
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (!isAllowedHost(url.hostname, env.LABS_HOSTNAME)) return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     if (isMaritimePublicPath(url.pathname)) return routeMaritime(request, env);
     if (url.pathname === "/maritime" || url.pathname.startsWith("/maritime/")) {
+      return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+    }
+    if (isClassifierPublicPath(url.pathname)) return routeClassifier(request, env);
+    if (url.pathname === "/classifier-dev" || url.pathname.startsWith("/classifier-dev/")) {
       return new Response("Not found", { status: 404, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     }
     if (url.pathname === "/_vinext/image") {

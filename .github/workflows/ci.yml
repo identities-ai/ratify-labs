@@ -96,16 +96,20 @@ jobs:
       - name: Validate target and restore Worker variables
         run: |
           set -euo pipefail
+          test -n "${{ vars.CLASSIFIER_ORIGIN }}" || {
+            echo "::error::CLASSIFIER_ORIGIN repository variable is not set"; exit 1;
+          }
           cfg=dist/server/wrangler.json
           test "$(jq -r '.name // empty' "$cfg")" = ratify-labs || {
             echo "::error::generated config targets an unexpected Worker"; exit 1;
           }
           jq '.vars = {
             "LABS_HOSTNAME": "labs.ratifyprotocol.com",
-            "MARITIME_ORIGIN": "https://ratify-maritime-demo-console-production.chuks-04d.workers.dev"
+            "MARITIME_ORIGIN": "https://ratify-maritime-demo-console-production.chuks-04d.workers.dev",
+            "CLASSIFIER_ORIGIN": "${{ vars.CLASSIFIER_ORIGIN }}"
           }' "$cfg" > "$cfg.tmp"
           mv "$cfg.tmp" "$cfg"
-          jq -e '.vars.LABS_HOSTNAME and .vars.MARITIME_ORIGIN' "$cfg" >/dev/null
+          jq -e '.vars.LABS_HOSTNAME and .vars.MARITIME_ORIGIN and .vars.CLASSIFIER_ORIGIN' "$cfg" >/dev/null
 
       - name: Record build fingerprint
         id: fingerprint
@@ -186,6 +190,7 @@ jobs:
           check /langchain 200 'GET /langchain'
           check /nvidia-openshell-nooa 200 'GET /nvidia-openshell-nooa'
           check /maritime 200 'GET /maritime'
+          check /classifier-dev/ 200 'GET /classifier-dev/'
           check /this-route-does-not-exist 404 'unknown route'
           check /maritime/api/anything 404 'denied maritime path'
           post="$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://labs.ratifyprotocol.com/maritime)"
