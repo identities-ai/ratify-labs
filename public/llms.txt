@@ -11,8 +11,8 @@ policy before the protected action runs.
 ## Start here
 
 - [Ratify Labs catalog](https://labs.ratifyprotocol.com/): browse every hosted lab and open reference.
-- [Maritime authorization lab](https://labs.ratifyprotocol.com/maritime): run allow, limit, resource, expiry, revocation, replay, and agent-isolation checks.
-- [classifier.dev authorization lab](https://labs.ratifyprotocol.com/classifier-dev): compare semantic classification with exact delegated authority.
+- [Maritime authorization lab](https://labs.ratifyprotocol.com/maritime/): run allow, limit, resource, expiry, revocation, replay, and agent-isolation checks.
+- [classifier.dev authorization lab](https://labs.ratifyprotocol.com/classifier-dev/): compare semantic classification with exact delegated authority.
 
 ## Open references
 

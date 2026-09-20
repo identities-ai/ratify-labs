@@ -158,7 +158,7 @@ export default async function ReferencePage({ params }: { params: Promise<{ refe
       <div className="ref-next-links">
         <a className="primary" href={entry.referenceHref} target="_blank" rel="noreferrer">Read the full reference <span>↗</span></a>
         {editorial?.briefHref && <a href={editorial.briefHref} target="_blank" rel="noreferrer">Download the federation and scale brief <span>↗</span></a>}
-        <Link href="/maritime">See a hosted lab: Maritime <span>→</span></Link>
+        <Link href="/maritime/">See a hosted lab: Maritime <span>→</span></Link>
       </div>
     </section>
 
