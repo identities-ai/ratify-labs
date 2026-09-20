@@ -46,7 +46,7 @@ export const ROUTES: RouteEntry[] = [
     displayName: "Maritime × Ratify",
     slug: "maritime",
     kind: "lab",
-    labHref: "https://labs.ratifyprotocol.com/maritime",
+    labHref: "https://labs.ratifyprotocol.com/maritime/",
     sourceHref: "https://github.com/identities-ai/ratify-maritime-reference",
   },
   {
@@ -54,7 +54,7 @@ export const ROUTES: RouteEntry[] = [
     displayName: "classifier.dev × Ratify",
     slug: "classifier-dev",
     kind: "lab",
-    labHref: "https://labs.ratifyprotocol.com/classifier-dev",
+    labHref: "https://labs.ratifyprotocol.com/classifier-dev/",
     sourceHref: "https://github.com/identities-ai/ratify-classifier-reference",
   },
   {

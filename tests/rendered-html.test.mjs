@@ -19,7 +19,7 @@ test("renders the shared Labs catalog", async () => {
   assert.match(html, /Don.t take the authority claim on trust/);
   assert.match(html, /Inspect the evidence/);
   assert.match(html, /Maritime × Ratify/);
-  assert.match(html, /href="https:\/\/labs\.ratifyprotocol\.com\/maritime"/);
+  assert.match(html, /href="https:\/\/labs\.ratifyprotocol\.com\/maritime\//);
   assert.match(html, /href="https:\/\/github\.com\/identities-ai\/ratify-maritime-reference"/);
   assert.match(html, /Catalog source/);
   assert.doesNotMatch(html, /Your site is taking shape/);
@@ -70,6 +70,10 @@ test("routes only read-only Maritime paths with a server credential", async () =
     const post = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime", { method: "POST" }), env, ctx);
     assert.equal(post.status, 405);
 
+    const redirect = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime"), env, ctx);
+    assert.equal(redirect.status, 308);
+    assert.equal(redirect.headers.get("location"), "/maritime/");
+
     const arbitrary = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/not-registered"), env, ctx);
     assert.equal(arbitrary.status, 404);
     assert.equal(calls.length, 1);
@@ -85,7 +89,7 @@ test("routes only read-only Maritime paths with a server credential", async () =
     assert.equal(calls.length, 2);
 
     globalThis.fetch = async () => new Response("internal origin detail", { status: 500, headers: { Location: "https://origin.example/private" } });
-    const failed = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime"), env, ctx);
+    const failed = await worker.fetch(new Request("https://labs.ratifyprotocol.com/maritime/"), env, ctx);
     assert.equal(failed.status, 502);
     assert.equal(await failed.text(), "Reference unavailable");
     assert.equal(failed.headers.get("location"), null);

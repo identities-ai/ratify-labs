@@ -37,18 +37,21 @@ function isClassifierPublicPath(pathname: string): boolean {
   return pathname === "/classifier-dev" ||
     pathname === "/classifier-dev/" ||
     pathname === "/classifier-dev/ratify-logo.png" ||
+    pathname === "/classifier-dev/og.jpg" ||
     pathname === "/classifier-dev/favicon.svg" ||
     pathname === "/classifier-dev/api/run" ||
     (pathname.startsWith("/classifier-dev/assets/") && pathname.length > "/classifier-dev/assets/".length);
 }
 
-function classifierError(error: string, status: number): Response {
+function classifierError(error: string, status: number, allow?: string): Response {
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+    "Content-Type": "application/json; charset=utf-8",
+  });
+  if (allow) headers.set("Allow", allow);
   return new Response(JSON.stringify({ error }), {
     status,
-    headers: securityHeaders(new Headers({
-      "Cache-Control": "no-store",
-      "Content-Type": "application/json; charset=utf-8",
-    })),
+    headers: securityHeaders(headers),
   });
 }
 
@@ -65,10 +68,16 @@ async function routeMaritime(request: Request, env: Env): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: "GET, HEAD", "Cache-Control": "no-store" })) });
   }
+  const source = new URL(request.url);
+  if (source.pathname === "/maritime") {
+    return new Response(null, {
+      status: 308,
+      headers: securityHeaders(new Headers({ Location: `/maritime/${source.search}`, "Cache-Control": "no-store" })),
+    });
+  }
   if (!env.MARITIME_ORIGIN || !env.LABS_ROUTER_TOKEN || env.LABS_ROUTER_TOKEN.length < 32) {
     return new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
   }
-  const source = new URL(request.url);
   const target = new URL(source.pathname + source.search, env.MARITIME_ORIGIN);
   const headers = new Headers();
   for (const name of ["Accept", "Accept-Language", "If-None-Match", "Range"]) {
@@ -106,7 +115,9 @@ async function routeClassifier(request: Request, env: Env): Promise<Response> {
     });
   }
   if (isApi ? request.method !== "POST" : request.method !== "GET" && request.method !== "HEAD") {
-    return new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: isApi ? "POST" : "GET, HEAD", "Cache-Control": "no-store" })) });
+    return isApi
+      ? classifierError("method_not_allowed", 405, "POST")
+      : new Response("Method not allowed", { status: 405, headers: securityHeaders(new Headers({ Allow: "GET, HEAD", "Cache-Control": "no-store" })) });
   }
   if (!env.CLASSIFIER_ORIGIN || !env.LABS_ROUTER_TOKEN || env.LABS_ROUTER_TOKEN.length < 32) {
     return isApi ? classifierError("reference_unavailable", 503) : new Response("Reference unavailable", { status: 503, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
@@ -127,7 +138,8 @@ async function routeClassifier(request: Request, env: Env): Promise<Response> {
       signal: AbortSignal.timeout(10_000),
     }));
     if (!((upstream.status >= 200 && upstream.status < 300) || upstream.status === 304)) {
-      return isApi ? classifierError("reference_unavailable", 502) : new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
+      const status = upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502;
+      return isApi ? classifierError("upstream_error", status) : new Response("Reference unavailable", { status: 502, headers: securityHeaders(new Headers({ "Cache-Control": "no-store" })) });
     }
     const responseHeaders = securityHeaders(new Headers(upstream.headers));
     responseHeaders.delete("Set-Cookie");
