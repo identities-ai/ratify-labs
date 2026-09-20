@@ -67,3 +67,20 @@
 .ref-next-links a:not(.primary){font-weight:650;text-decoration:none;color:var(--blue);font-size:14px}
 @media(max-width:760px){.ref-hero,.ref-section,.ref-next{padding-left:20px;padding-right:20px}}
 .diagram-pending{font:12px var(--font-mono);color:#8995aa;border:1px dashed var(--line);border-radius:8px;padding:14px;margin:0}
+
+/* Keep the Labs shell present while the page moves underneath it. */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom-color: rgba(220,226,235,.86);
+  box-shadow: 0 8px 30px rgba(31,52,88,.06);
+}
+.ref-hero { padding-top: 130px; }
+@media (max-width: 800px) { .hero { padding-top: 120px; } }
+@media (max-width: 440px) { .hero { padding-top: 112px; } }
