@@ -189,11 +189,11 @@ jobs:
           check /google-adk 200 'GET /google-adk'
           check /langchain 200 'GET /langchain'
           check /nvidia-openshell-nooa 200 'GET /nvidia-openshell-nooa'
-          check /maritime 200 'GET /maritime'
+          check /maritime/ 200 'GET /maritime/'
           check /classifier-dev/ 200 'GET /classifier-dev/'
           check /this-route-does-not-exist 404 'unknown route'
           check /maritime/api/anything 404 'denied maritime path'
           post="$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://labs.ratifyprotocol.com/maritime)"
           test "$post" = 405 || { echo "::error::POST /maritime expected 405 got $post"; exit 1; }
-          header="$(curl -fsS -D - -o /dev/null https://labs.ratifyprotocol.com/maritime | awk -F': ' 'tolower($1)=="x-ratify-labs-reference" {gsub("\r", "", $2); print $2; exit}')"
+          header="$(curl -fsS -D - -o /dev/null https://labs.ratifyprotocol.com/maritime/ | awk -F': ' 'tolower($1)=="x-ratify-labs-reference" {gsub("\r", "", $2); print $2; exit}')"
           test "$header" = maritime || { echo "::error::unexpected reference header: $header"; exit 1; }
