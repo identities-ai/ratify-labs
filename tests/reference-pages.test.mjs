@@ -87,7 +87,7 @@ test("the catalog links only the hosted labs", async () => {
   assert.ok(labLinks.length > 0, "expected a hosted lab to be linked");
   assert.deepEqual([...new Set(labLinks)].sort(), ["classifier-dev", "maritime"]);
   assert.match(html, /Independent reference: classifier\.dev turns a support ticket into an action/);
-  assert.match(html, /github\.com\/identities-ai\/ratify-classifier-reference/);
+  assert.match(html, /github\.com\/identities-ai\/ratify-classifier-dev-reference/);
 
   // The published references link to source, never to a deployment here.
   for (const slug of ["github-copilot", "google-adk", "langchain"]) {
