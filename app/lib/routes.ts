@@ -55,7 +55,7 @@ export const ROUTES: RouteEntry[] = [
     slug: "classifier-dev",
     kind: "lab",
     labHref: "https://labs.ratifyprotocol.com/classifier-dev",
-    sourceHref: "https://github.com/identities-ai/ratify-classifier-reference",
+    sourceHref: "https://github.com/identities-ai/ratify-classifier-dev-reference",
   },
   {
     route: "/copilot",
