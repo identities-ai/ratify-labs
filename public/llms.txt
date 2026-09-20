@@ -1,0 +1,34 @@
+# Ratify Labs
+
+> Open reference implementations showing how a receiver verifies delegated authority before an AI agent acts.
+
+Ratify Labs is the canonical catalog for runnable labs and open reference pages
+about receiver-owned authorization. A classifier, model, agent framework, or
+network credential may propose or carry a request; the receiver checks the
+signed delegation, scope, resource, operation, freshness, expiry, and local
+policy before the protected action runs.
+
+## Start here
+
+- [Ratify Labs catalog](https://labs.ratifyprotocol.com/): browse every hosted lab and open reference.
+- [Maritime authorization lab](https://labs.ratifyprotocol.com/maritime): run allow, limit, resource, expiry, revocation, replay, and agent-isolation checks.
+- [classifier.dev authorization lab](https://labs.ratifyprotocol.com/classifier-dev): compare semantic classification with exact delegated authority.
+
+## Open references
+
+- [GitHub Copilot](https://labs.ratifyprotocol.com/copilot): verify an exact deployment action over MCP.
+- [Google ADK](https://labs.ratifyprotocol.com/google-adk): verify a multi-agent handoff across separately anchored domains.
+- [LangChain](https://labs.ratifyprotocol.com/langchain): verify an exact MCP action without giving the model the signing key.
+- [NVIDIA OpenShell plus NOOA](https://labs.ratifyprotocol.com/nvidia-openshell-nooa): verify a bounded cross-company order action.
+- [Ratify Edge Physical AI](https://labs.ratifyprotocol.com/edge-sentinel): verify an edge action before an actuator runs.
+
+## Source and protocol
+
+- [Labs catalog source](https://github.com/identities-ai/ratify-labs)
+- [Ratify Protocol](https://github.com/identities-ai/ratify-protocol)
+- [Ratify Protocol documentation](https://docs.ratifyprotocol.com)
+
+Each reference page identifies its canonical source, prerequisites, run command,
+evidence, limitations, and whether it is a hosted lab or a reference to run
+locally. Platform names indicate implementation context, not endorsement or
+partnership.
