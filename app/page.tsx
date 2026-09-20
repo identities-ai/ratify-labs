@@ -90,6 +90,7 @@ export default function Home() {
     url: "https://labs.ratifyprotocol.com/",
     description: "Open reference implementations showing how a receiver verifies delegated authority before an agent acts.",
     publisher: { "@type": "Organization", name: "Ratify Protocol", url: "https://ratifyprotocol.com" },
+    isPartOf: { "@type": "WebSite", name: "Ratify Protocol", url: "https://ratifyprotocol.com" },
     mainEntity: {
       "@type": "ItemList",
       name: "Reference catalog",

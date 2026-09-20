@@ -17,10 +17,6 @@ if (routes.length === 0) {
 
 const today = new Date().toISOString().slice(0, 10);
 const urls = ["/", ...routes]
-  // The routed Maritime path is a proxy to a separate deployment which sets its
-  // own metadata. Listing it here would claim authority over a page this site
-  // does not author.
-  .filter((route) => route !== "/maritime")
   .map((route) => `  <url>\n    <loc>${ORIGIN}${route}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`)
   .join("\n");
 
