@@ -50,6 +50,14 @@ export const ROUTES: RouteEntry[] = [
     sourceHref: "https://github.com/identities-ai/ratify-maritime-reference",
   },
   {
+    route: "/classifier-dev",
+    displayName: "classifier.dev × Ratify",
+    slug: "classifier-dev",
+    kind: "lab",
+    labHref: "https://labs.ratifyprotocol.com/classifier-dev",
+    sourceHref: "https://github.com/identities-ai/ratify-classifier-reference",
+  },
+  {
     route: "/copilot",
     displayName: "GitHub Copilot",
     slug: "github-copilot",

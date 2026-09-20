@@ -85,7 +85,7 @@ npm install
 npm test
 ```
 
-Local routing requires `MARITIME_ORIGIN` and `LABS_ROUTER_TOKEN` in an ignored
+Local routing requires `MARITIME_ORIGIN`, `CLASSIFIER_ORIGIN`, and `LABS_ROUTER_TOKEN` in an ignored
 `.env` file. Production values are managed as hosting secrets and environment
 configuration; they never enter source control.
 
@@ -129,8 +129,9 @@ npm run build
 npx wrangler deploy --config dist/server/wrangler.json --keep-vars
 ```
 
-The Worker requires the existing `LABS_ROUTER_TOKEN` secret for the Maritime
-route. Keep that value in Cloudflare and never commit it.
+The Worker requires the existing `LABS_ROUTER_TOKEN` secret plus the two reference
+origins for the Maritime and classifier.dev routes. Keep the token in Cloudflare
+and never commit it.
 
 Read [`docs/PRODUCT-REQUIREMENTS.md`](docs/PRODUCT-REQUIREMENTS.md) before
 adding a catalog entry or route.

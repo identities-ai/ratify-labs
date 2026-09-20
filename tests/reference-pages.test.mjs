@@ -64,13 +64,19 @@ test("an unknown reference route is not served", async () => {
   assert.equal(response.status, 404);
 });
 
-test("the catalog links a hosted lab only for Maritime", async () => {
+test("the classifier lab canonicalizes its subpath before proxying assets", async () => {
+  const response = await get("/classifier-dev", "classifier-slash");
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), "/classifier-dev/");
+});
+
+test("the catalog links only the hosted labs", async () => {
   const response = await get("/", "catalog-controls");
   const html = await response.text();
 
   // Counting a phrase is not the test: server-rendered React emits it in both
-  // the markup and the hydration payload. What matters is that exactly one
-  // reference points at a deployment, and that it is Maritime.
+  // the markup and the hydration payload. What matters is that only the
+  // references explicitly marked live point at deployments.
   // Route segments only. Asset URLs on the same host (og.jpg, the logo) are
   // not lab links, and counting them was the first version of this test.
   // Structured data now carries a canonical URL per page, which is a third
@@ -78,8 +84,10 @@ test("the catalog links a hosted lab only for Maritime", async () => {
   // canonical URL is not a lab link, so scan the rendered markup only.
   const labLinks = [...markupOnly(html).matchAll(/https:\/\/labs\.ratifyprotocol\.com\/([a-z][a-z0-9-]*)(?![\w.])/g)]
     .map((match) => match[1]);
-  assert.ok(labLinks.length > 0, "expected the Maritime lab to be linked");
-  assert.deepEqual([...new Set(labLinks)], ["maritime"]);
+  assert.ok(labLinks.length > 0, "expected a hosted lab to be linked");
+  assert.deepEqual([...new Set(labLinks)].sort(), ["classifier-dev", "maritime"]);
+  assert.match(html, /Independent reference: classifier\.dev turns a support ticket into an action/);
+  assert.match(html, /github\.com\/identities-ai\/ratify-classifier-reference/);
 
   // The published references link to source, never to a deployment here.
   for (const slug of ["github-copilot", "google-adk", "langchain"]) {
@@ -149,8 +157,8 @@ test("every card also offers the canonical source", async () => {
   const sources = markupOnly(html).match(/View implementation source/g) ?? [];
   assert.equal(
     sources.length,
-    PAGES.length + 1,
-    "each reference card, plus the Maritime lab, keeps a link to its source",
+    PAGES.length + 2,
+    "each reference card, plus both live labs, keeps a link to its source",
   );
 });
 
@@ -175,11 +183,11 @@ test("hardware prerequisites appear on exactly one card", async () => {
 });
 
 // Live, Published and Upcoming must keep meaning what they meant.
-test("only Maritime is Live, and only it offers a hosted lab", async () => {
+test("live entries offer hosted labs", async () => {
   const html = await (await get("/", "catalog-kinds")).text();
   const markup = markupOnly(html);
-  assert.equal((markup.match(/Run the live lab/g) ?? []).length, 1);
-  assert.equal((markup.match(/>Live</g) ?? []).length, 1);
+  assert.equal((markup.match(/Run the live lab/g) ?? []).length, 2);
+  assert.equal((markup.match(/>Live</g) ?? []).length, 2);
   assert.equal((markup.match(/>Published</g) ?? []).length, PAGES.length);
   assert.doesNotMatch(markup, />Upcoming</, "no upcoming entry is routed");
 });
@@ -239,7 +247,7 @@ test("the catalog emits a parseable ItemList of every reference", async () => {
   const data = JSON.parse(raw);
   assert.equal(data["@type"], "WebSite");
   assert.equal(data.mainEntity["@type"], "ItemList");
-  assert.equal(data.mainEntity.itemListElement.length, PAGES.length + 1, "every card, including the lab");
+  assert.equal(data.mainEntity.itemListElement.length, PAGES.length + 2, "every card, including both labs");
 });
 
 // A reader arriving from a shared link should not have to leave the page to

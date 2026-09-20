@@ -20,6 +20,15 @@ const references = [
     live: true,
   },
   {
+    name: "classifier.dev × Ratify",
+    status: "Live",
+    description: "Independent reference: classifier.dev turns a support ticket into an action; Ratify stops the agent when its proposed customer, operation, path, or one-time call exceeds the signed mandate.",
+    href: "https://labs.ratifyprotocol.com/classifier-dev",
+    sourceHref: "https://github.com/identities-ai/ratify-classifier-reference",
+    action: "Run the live lab",
+    live: true,
+  },
+  {
     name: "GitHub Copilot",
     status: "Published",
     description: "Copilot calls a deployment tool over MCP. An independently operated receiver verifies that a recognized principal authorized this exact action, on this exact resource, before the protected handler runs.",
