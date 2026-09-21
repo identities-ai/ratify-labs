@@ -80,11 +80,11 @@ html { scroll-padding-top: 96px; }
   left: 0;
   right: 0;
   z-index: 20;
-  background: rgba(255,255,255,.78);
+  background: rgba(255,255,255,.92);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   border-bottom-color: rgba(220,226,235,.86);
-  box-shadow: 0 8px 30px rgba(31,52,88,.06);
+  box-shadow: 0 8px 30px rgba(31,52,88,.09);
 }
 .ref-hero { padding-top: 130px; }
 @media (max-width: 800px) { .hero { padding-top: 120px; } }
