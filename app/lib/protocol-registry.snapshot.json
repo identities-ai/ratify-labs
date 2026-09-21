@@ -1,5 +1,5 @@
 {
-  "commit": "580dd67a4a180ab72f99c6829e0b257e60b58801",
+  "commit": "8ae1d4fd42679ee928d32ed79cec8b05e68ea9bd",
   "capturedAt": "2026-09-21",
   "entries": {
     "github-copilot": "# GitHub Copilot\n\n- Profile: [`references/github-copilot`](../github-copilot/README.md)\n- Status: independent Ratify reference; not reviewed or endorsed by GitHub or Microsoft\n- Ratify SDK: `@identities-ai/ratify-protocol@1.0.0-alpha.19`\n- Integration surface: GitHub Copilot plugin, Agent Skill, and MCP server\n- MCP SDK: `@modelcontextprotocol/sdk@1.30.0`\n- Gate: `references/github-copilot/run-reference-check.sh`\n- Gate result: Declared in [`ratify-reference.json`](../github-copilot/ratify-reference.json) and checked by the gate\n- Evidence: [`reference-evidence.md`](../github-copilot/reference-evidence.md)\n\nThis entry records Ratify-maintained interoperability evidence. It does not imply a partnership, approval, or standardization commitment by GitHub or Microsoft.\n",
@@ -8,5 +8,5 @@
     "nvidia-nooa-openshell": "# NVIDIA OpenShell + NOOA\n\n- **Profile:** [`../nvidia-nooa-openshell/`](../nvidia-nooa-openshell/README.md)\n- **Status:** Executed draft; pending NVIDIA review\n- **Ratify:** `1.0.0a20`\n- **Platform:** `openshell==0.0.102`, `nooa==0.0.8`\n- **Gate:** `./scripts/nvidia-reference-check.sh`\n- **Production backlog:** [`../nvidia-nooa-openshell/PRODUCTION_GAPS.md`](../nvidia-nooa-openshell/PRODUCTION_GAPS.md)\n- **Endorsement:** Not NVIDIA-reviewed or NVIDIA-approved\n",
     "physical-ai-edge-sentinel": "# Ratify Edge Physical AI\n\n- **Status:** experimental, self-authored, no platform endorsement\n- **Profile:** [`references/physical-ai-edge-sentinel/README.md`](../physical-ai-edge-sentinel/README.md)\n- **Demonstrates:** delegated authority verification at a Linux edge boundary before a safe Arduino actuator\n- **Agent integration:** deterministic controller first, optional Google ADK adapter planned\n- **Actuator:** Arduino Uno built-in LED over USB serial\n- **Hardware:** pre-RTC, non-hazardous only\n- **Gate:** `RATIFY_SDK=/path/to/ratify-c ./references/physical-ai-edge-sentinel/run-reference-check.sh`\n- **Evidence:** [`references/physical-ai-edge-sentinel/docs/evidence.md`](../physical-ai-edge-sentinel/docs/evidence.md)\n- **Gate result:** Declared in [`ratify-reference.json`](../physical-ai-edge-sentinel/ratify-reference.json) and checked by the gate\n- **Review:** no robotics, farm, Arduino, or AI-platform endorsement claimed\n"
   },
-  "integrity": "1bc8c1df7569bb402a2bab49c524a2477dfdc3e2276271a8df43b26b2eddcae4"
+  "integrity": "9bfa6167fdfb52315aa4f7f258b5798f4c06d3939067d06c6f27bf6fe7a68472"
 }
