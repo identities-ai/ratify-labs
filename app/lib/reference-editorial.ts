@@ -44,10 +44,10 @@ export const EDITORIAL: Record<string, Editorial> = {
   },
   langchain: {
     claim:
-      "Let a LangChain agent cross an MCP boundary while the receiver verifies who authorized the exact action.",
+      "Let a LangChain agent use optional Jev tool selection, then cross an MCP boundary while the receiver verifies who authorized the exact action.",
     prerequisites: "Python 3.12. No model API key or paid service.",
     run: "./scripts/langchain-reference-check.sh",
-    evidence: "26 tests pass, zero skipped, and the gate fails on any skip.",
+    evidence: "28 tests pass, including deterministic Jev-selection cases, zero skipped, and the gate fails on any skip.",
     endorsement:
       "An independent draft reference implementation. Not a LangChain partnership, LangChain-approved integration, or LangChain reference architecture.",
   },
