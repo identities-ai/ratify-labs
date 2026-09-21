@@ -141,7 +141,7 @@ export default function Home() {
           {reference.href ? <div className="card-links"><a href={reference.href} target="_blank" rel="noreferrer">{reference.action} <span>→</span></a><a href={reference.sourceHref} target="_blank" rel="noreferrer">View implementation source</a></div> : <span className="unavailable">In development</span>}
         </article>)}
       </div>
-      <p className="catalog-note">Ratify Labs publishes open reference implementations, not the Ratify Verify product. A listed platform is implementation context, not an endorsement or partnership claim.</p>
+      <p className="catalog-note">Ratify Labs publishes open reference implementations, not the Ratify Verify product. A listed platform is implementation context, not an endorsement or partnership claim. <a href="https://ratifyprotocol.com/?intent=proof#partners" target="_blank" rel="noreferrer">Register interest in Ratify Verify ↗</a></p>
     </section>
 
     <section className="principles" id="principles">
