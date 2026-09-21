@@ -47,7 +47,7 @@ export const EDITORIAL: Record<string, Editorial> = {
       "Let a LangChain agent cross an MCP boundary while the receiver verifies who authorized the exact action.",
     prerequisites: "Python 3.12. No model API key or paid service.",
     run: "./scripts/langchain-reference-check.sh",
-    evidence: "24 tests pass, zero skipped, and the gate fails on any skip.",
+    evidence: "26 tests pass, zero skipped, and the gate fails on any skip.",
     endorsement:
       "An independent draft reference implementation. Not a LangChain partnership, LangChain-approved integration, or LangChain reference architecture.",
   },
