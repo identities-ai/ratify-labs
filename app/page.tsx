@@ -77,6 +77,15 @@ const references = [
     action: "Read the reference",
     published: true,
   },
+  {
+    name: "A2A delegated authority",
+    status: "Published",
+    description: "An A2A receiving agent checks a principal's signed one-node mandate for the exact operation before provisioning. This independent extension draft is open for community review.",
+    href: "/a2a",
+    sourceHref: `${REPO}/tree/main/references/a2a`,
+    action: "Read the reference",
+    published: true,
+  },
 ];
 
 export default function Home() {
@@ -94,7 +103,7 @@ export default function Home() {
     mainEntity: {
       "@type": "ItemList",
       name: "Reference catalog",
-      itemListElement: references.map((reference, index) => ({
+      itemListElement: references.flatMap((reference, index) => reference.href ? [{
         "@type": "ListItem",
         position: index + 1,
         name: reference.name,
@@ -102,7 +111,7 @@ export default function Home() {
         url: reference.href.startsWith("http")
           ? reference.href
           : `https://labs.ratifyprotocol.com${reference.href}`,
-      })),
+      }] : []),
     },
   };
 
