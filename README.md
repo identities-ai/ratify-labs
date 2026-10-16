@@ -115,6 +115,11 @@ registry, the build, the tests, the type check, the linter, and a dependency
 audit at high severity. The route registry runs first, so a route pointing at an
 unpublished reference fails before anything is built.
 
+The audit gate allows only the currently unpatched `braces` advisory
+`GHSA-vfj7-8cjw-p6xm` through known build and lint dependencies. Any other
+high or critical advisory still fails CI. Remove the exception when a patched
+dependency path is available.
+
 The linter is in the gate deliberately. `npm test` builds and tests without
 linting, which is how three lint errors reached `main`.
 
