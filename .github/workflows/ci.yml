@@ -58,7 +58,7 @@ jobs:
         run: npm run lint
 
       - name: Dependency advisories
-        run: npm audit --audit-level=high
+        run: node scripts/check-dependency-audit.mjs
 
   deploy:
     name: Deploy Worker
