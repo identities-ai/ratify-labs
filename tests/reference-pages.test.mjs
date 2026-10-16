@@ -29,6 +29,7 @@ function markupOnly(html) {
 const PAGES = [
   { route: "/copilot", name: "GitHub Copilot", endorsement: /Not a GitHub- or Microsoft-endorsed/ },
   { route: "/google-adk", name: "Google ADK", endorsement: /Not a Google partnership/ },
+  { route: "/a2a", name: "A2A delegated authority", endorsement: /Not an A2A-approved extension/ },
   { route: "/langchain", name: "LangChain", endorsement: /Not a LangChain partnership/ },
   { route: "/nvidia-openshell-nooa", name: "NVIDIA OpenShell \\+ NOOA", endorsement: /Not an NVIDIA partnership/ },
   // The only entry a reader cannot run from a package install. Its page must
@@ -90,7 +91,7 @@ test("the catalog links only the hosted labs", async () => {
   assert.match(html, /github\.com\/identities-ai\/ratify-classifier-reference/);
 
   // The published references link to source, never to a deployment here.
-  for (const slug of ["github-copilot", "google-adk", "langchain"]) {
+  for (const slug of ["github-copilot", "google-adk", "langchain", "a2a"]) {
     assert.match(html, new RegExp(`ratify-protocol/tree/main/references/${slug}`));
   }
 });

@@ -74,6 +74,14 @@ export const ROUTES: RouteEntry[] = [
     sourceHref: `${PROTOCOL}/tree/main/references/google-adk`,
   },
   {
+    route: "/a2a",
+    displayName: "A2A delegated authority",
+    slug: "a2a",
+    kind: "reference",
+    referenceHref: `${PROTOCOL}/blob/main/references/a2a/README.md`,
+    sourceHref: `${PROTOCOL}/tree/main/references/a2a`,
+  },
+  {
     route: "/langchain",
     displayName: "LangChain",
     slug: "langchain",
