@@ -65,6 +65,7 @@ implementation in the protocol repository.
 | **Maritime × Ratify** | An agent passes at $420 and stops at $501 against a signed $500 ceiling | [Run the Maritime lab](https://labs.ratifyprotocol.com/maritime) | [Maritime implementation](https://github.com/identities-ai/ratify-maritime-reference) |
 | **GitHub Copilot** | Copilot calls a deployment tool; a receiver checks the mandate first | [Read the Copilot reference](https://labs.ratifyprotocol.com/copilot) | [Copilot reference source](https://github.com/identities-ai/ratify-protocol/tree/main/references/github-copilot) |
 | **Google ADK** | An ADK agent requests provisioning; the signed node ceiling is enforced | [Read the Google ADK reference](https://labs.ratifyprotocol.com/google-adk) | [Google ADK reference source](https://github.com/identities-ai/ratify-protocol/tree/main/references/google-adk) |
+| **A2A delegated authority** | An A2A receiver verifies a one-node mandate before provisioning; this experimental carrier is open for review | [Read the A2A reference](https://labs.ratifyprotocol.com/a2a) | [A2A source](https://github.com/identities-ai/ratify-protocol/tree/main/references/a2a) |
 | **LangChain** | A LangChain agent crosses an MCP boundary and the receiver verifies who authorized it | [Read the LangChain reference](https://labs.ratifyprotocol.com/langchain) | [LangChain reference source](https://github.com/identities-ai/ratify-protocol/tree/main/references/langchain) |
 | **NVIDIA OpenShell + NOOA** | One company's agent asks another's service to move money; the ceiling and named order are verified | [Read the NVIDIA reference](https://labs.ratifyprotocol.com/nvidia-openshell-nooa) | [NVIDIA reference source](https://github.com/identities-ai/ratify-protocol/tree/main/demos/nvidia-nooa-delegated-authority) |
 
@@ -113,6 +114,11 @@ Every pull request and every push to `main` runs the same gate: the route
 registry, the build, the tests, the type check, the linter, and a dependency
 audit at high severity. The route registry runs first, so a route pointing at an
 unpublished reference fails before anything is built.
+
+The audit gate allows only the currently unpatched `braces` advisory
+`GHSA-vfj7-8cjw-p6xm` through known build and lint dependencies. Any other
+high or critical advisory still fails CI. Remove the exception when a patched
+dependency path is available.
 
 The linter is in the gate deliberately. `npm test` builds and tests without
 linting, which is how three lint errors reached `main`.
