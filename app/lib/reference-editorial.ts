@@ -47,7 +47,7 @@ export const EDITORIAL: Record<string, Editorial> = {
       "See an A2A receiving agent check who authorized one exact provisioning action before it acts.",
     prerequisites: "Python 3.10 or newer and pip. No model key, Google Cloud project, or paid service.",
     run: "./scripts/a2a-reference-check.sh",
-    evidence: "2 A2A 1.0 JSON-RPC wire tests pass with zero skips; denied requests leave the protected provisioner uncalled.",
+    evidence: "4 A2A 1.0 JSON-RPC wire tests pass with zero skips; denied requests leave the protected provisioner uncalled.",
     briefHref:
       "https://github.com/identities-ai/ratify-protocol/blob/main/references/a2a/AGNTCY_A2A_FIT.md",
     endorsement:
