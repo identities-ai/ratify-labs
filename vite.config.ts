@@ -1,8 +1,9 @@
 import vinext from "vinext";
 import { defineConfig } from "vite";
 
-// macOS Seatbelt blocks FSEvents, so sandboxed previews need polling for HMR.
-const isSeatbeltSandbox = process.env.SEATBELT_SANDBOX === "seatbelt";
+// Sandboxes that block macOS FSEvents need polling for HMR; opt in with
+// VITE_USE_POLLING=1.
+const usePolling = process.env.VITE_USE_POLLING === "1";
 
 const localBindingConfig = {
   main: "./worker/index.ts",
@@ -20,7 +21,7 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
-    server: isSeatbeltSandbox
+    server: usePolling
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
     plugins: [

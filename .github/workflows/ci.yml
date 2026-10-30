@@ -60,6 +60,11 @@ jobs:
       - name: Dependency advisories
         run: node scripts/check-dependency-audit.mjs
 
+      # Everything tracked here is public. Correspondence, partner material,
+      # planning notes, private paths and personal addresses never land here.
+      - name: Public content
+        run: python3 scripts/check-public-content.py
+
   deploy:
     name: Deploy Worker
     needs: verify
