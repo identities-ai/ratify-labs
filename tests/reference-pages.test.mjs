@@ -46,7 +46,7 @@ for (const page of PAGES) {
     assert.match(html, new RegExp(page.name));
 
     // The generated sections must be present in the server HTML, not fetched
-    // by the browser. These pages are what outreach links to, and a link that
+    // by the browser. These pages are what people link to, and a link that
     // renders nothing without JavaScript is not a reference.
     assert.match(html, /Why would a developer or enterprise need this/);
     assert.match(html, /Who implements what/);

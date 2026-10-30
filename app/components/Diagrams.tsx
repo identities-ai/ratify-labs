@@ -6,7 +6,7 @@ import { useEffect } from "react";
 //
 // Only the diagrams are client-rendered. The prose, tables, and lists are
 // parsed on the server so the page carries its own content: these pages are
-// what outreach links to, and a link that renders nothing without JavaScript is
+// what people link to, and a link that renders nothing without JavaScript is
 // not much of a reference.
 export function Diagrams({ sources }: { sources: string[] }) {
   useEffect(() => {
