@@ -187,8 +187,11 @@ test("hardware prerequisites appear on exactly one card", async () => {
 test("live entries offer hosted labs", async () => {
   const html = await (await get("/", "catalog-kinds")).text();
   const markup = markupOnly(html);
-  assert.equal((markup.match(/Run the live lab/g) ?? []).length, 2);
-  assert.equal((markup.match(/>Live</g) ?? []).length, 2);
+  assert.equal((markup.match(/Run the live lab/g) ?? []).length, 1);
+  assert.equal((markup.match(/>Live</g) ?? []).length, 1);
+  // Maritime's hosted runtimes are offline, so its card must not claim live results.
+  assert.equal((markup.match(/Open the walkthrough/g) ?? []).length, 1);
+  assert.equal((markup.match(/>Walkthrough</g) ?? []).length, 1);
   assert.equal((markup.match(/>Published</g) ?? []).length, PAGES.length);
   assert.doesNotMatch(markup, />Upcoming</, "no upcoming entry is routed");
 });

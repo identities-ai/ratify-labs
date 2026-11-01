@@ -6,17 +6,18 @@ const REPO = "https://github.com/identities-ai/ratify-protocol";
 // pointed at them. scripts/check-routes.mjs now refuses that state.
 
 // Three states, because there are three real situations and collapsing them
-// misleads. `live` is a lab hosted here that a visitor can run in the browser.
+// misleads. `live` is a lab hosted here that a visitor can run in the browser;
+// its status says whether results come from live runtimes or a walkthrough.
 // `published` is merged, open source they run themselves; the link goes to the
 // reference, not to a promise. Anything else is genuinely not ready, and says so.
 const references = [
   {
     name: "Maritime × Ratify",
-    status: "Live",
-    description: "Watch the same agent pass at $420 and stop at $501 when a signed delegation sets a $500 ceiling.",
+    status: "Walkthrough",
+    description: "Watch the same agent pass at $420 and stop at $501 when a signed delegation sets a $500 ceiling. The hosted runtimes are offline, so the lab shows labeled walkthrough results; the gate runs locally from source.",
     href: "https://labs.ratifyprotocol.com/maritime/",
     sourceHref: "https://github.com/identities-ai/ratify-maritime-reference",
-    action: "Run the live lab",
+    action: "Open the walkthrough",
     live: true,
   },
   {
@@ -140,7 +141,7 @@ export default function Home() {
     </section>
 
     <section className="catalog" id="references">
-      <div className="section-head"><div><p className="kicker">REFERENCE CATALOG</p><h2>See the boundary. Inspect the evidence.</h2></div><p>Open implementations. Real decisions. No pre-scripted outcomes.</p></div>
+      <div className="section-head"><div><p className="kicker">REFERENCE CATALOG</p><h2>See the boundary. Inspect the evidence.</h2></div><p>Open implementations. Every result says how it was produced.</p></div>
       <div className="cards">
         {references.map((reference, index) => <article className={reference.live ? "card featured" : "card"} key={reference.name}>
           <div className="card-top"><span className="index">0{index + 1}</span><span className={`status ${reference.live ? "is-live" : ""} ${reference.published ? "is-published" : ""}`.trim()}>{reference.live && <i />}{reference.status}</span></div>
