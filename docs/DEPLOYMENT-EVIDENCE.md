@@ -15,6 +15,12 @@ Date: 2026-09-17
 
 ## Maritime route
 
+The Maritime reference repository's history was rewritten on 2026-11-01, so its
+commit IDs changed. The routed reference revision `6b9adf5` below is now
+`315ad38`, and the agent image source revision `ce0494e3` is now
+`43f9a8b3e1f1dd6ecd1e4e6ef4f7dace653eea31`. The image itself still carries the
+original revision label, so the IDs below are left as recorded.
+
 - Stable route: `https://labs.ratifyprotocol.com/maritime`
 - Routed reference revision: `6b9adf5`
 - Reference hosting version: 14
